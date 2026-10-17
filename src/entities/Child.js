@@ -2,12 +2,16 @@ import * as THREE from 'three';
 import { part } from '../world/materials.js';
 import { clamp, damp, angleDiff, rand } from '../core/math.js';
 import { MAP_HALF } from '../world/World.js';
-import { followSpeed, pickBreadcrumb, boardingRule, CHILD_BOARD_DIST } from './childLogic.js';
+import { followSpeed, followDistance, pickBreadcrumb, boardingRule, CHILD_BOARD_DIST } from './childLogic.js';
 
-// Kurtarılacak çocuk: Deniz. Sarı yağmurluk (zombilerden ayırt edilsin diye yeşil değil).
+// Kurtarılacak çocuk. Renkli yağmurluk (zombilerden ayırt edilsin diye yeşil değil).
 export class Child {
-  constructor(game, x, z) {
+  constructor(game, x, z, opts = {}) {
     this.game = game;
+    this.name = opts.name || 'Deniz';
+    this.coat = opts.coat || '#fdd835';
+    this.pitch = opts.pitch || 1;
+    this.order = 0;
     this.pos = new THREE.Vector3(x, 0, z);
     this.yaw = 0;
     this.state = 'hiding'; // hiding | following | inVehicle | dead | safe
@@ -39,14 +43,14 @@ export class Child {
     part(this.legL, 0.14, 0.5, 0.16, 0, -0.25, 0, '#1e3a6e');
     part(this.legR, 0.14, 0.5, 0.16, 0, -0.25, 0, '#1e3a6e');
     inner.add(this.legL, this.legR);
-    this.bodyMat = part(inner, 0.4, 0.45, 0.26, 0, 0.73, 0, '#fdd835').material.clone();
+    this.bodyMat = part(inner, 0.4, 0.45, 0.26, 0, 0.73, 0, this.coat).material.clone();
     inner.children[inner.children.length - 1].material = this.bodyMat;
     this.armL = new THREE.Group();
     this.armR = new THREE.Group();
     this.armL.position.set(-0.26, 0.93, 0);
     this.armR.position.set(0.26, 0.93, 0);
-    part(this.armL, 0.11, 0.42, 0.12, 0, -0.2, 0, '#fbc02d');
-    part(this.armR, 0.11, 0.42, 0.12, 0, -0.2, 0, '#fbc02d');
+    part(this.armL, 0.11, 0.42, 0.12, 0, -0.2, 0, this.coat);
+    part(this.armR, 0.11, 0.42, 0.12, 0, -0.2, 0, this.coat);
     inner.add(this.armL, this.armR);
     part(inner, 0.3, 0.3, 0.3, 0, 1.12, 0, '#f1c27d');
     part(inner, 0.32, 0.12, 0.32, 0, 1.3, 0.02, '#4e342e');
@@ -79,25 +83,27 @@ export class Child {
     if (!this.alive || this.state === 'safe' || amount <= 0) return;
     this.health = Math.max(0, this.health - amount);
     this.hurt = 0.25;
-    this.game.audio.play('child', this.pos, 1, 1.2);
+    this.game.audio.play('child', this.pos, 1, this.pitch * 1.2);
     if (this.health <= 0) {
       this.state = 'dead';
       if (this.vehicle) this.detach();
-      this.game.onChildDied();
+      this.game.onChildDied(this);
     } else if (fromPos && this.state === 'following') {
       // Vurulunca oyuncuya doğru sıçrar
       this.panicTime = 1;
     }
   }
 
-  attachTo(v) {
+  // seat: araçtaki kaçıncı yolcu (0 = ön koltuk)
+  attachTo(v, seat = 0) {
     this.vehicle = v;
     this.state = 'inVehicle';
     const [sx, sy, sz] = v.spec.seat;
     this.mesh.position.set(0, 0, 0);
     this.mesh.rotation.set(0, 0, 0);
     if (v.typeKey === 'motorcycle') this.mesh.position.set(0, sy - 0.05, sz + 0.55);
-    else this.mesh.position.set(-sx, sy - 0.3, sz);
+    else if (seat === 0) this.mesh.position.set(-sx, sy - 0.3, sz);
+    else this.mesh.position.set(seat === 1 ? -0.45 : 0.45, sy - 0.3, sz + 1.1);
     this.inner.position.y = 0;
     this.legL.rotation.x = -1.3;
     this.legR.rotation.x = -1.3;
@@ -167,18 +173,20 @@ export class Child {
     this.inner.position.y = damp(this.inner.position.y, 0, 8, dt);
     this.inner.rotation.x = damp(this.inner.rotation.x, 0, 8, dt);
 
-    // Oyuncu araçtaysa yakındaysa biner
+    // Oyuncu araçtaysa yakındaysa biner (koltuk varsa)
     if (p.vehicle) {
-      const rule = boardingRule(p.vehicle.typeKey);
+      const kids = g.children || [];
+      const occupied = kids.filter((c) => c.vehicle === p.vehicle).length;
+      const rule = boardingRule(p.vehicle.spec.seats || 0, occupied);
       const vd = p.vehicle.surfaceDist(this.pos.x, this.pos.z);
       if (rule.ok && vd < CHILD_BOARD_DIST) {
-        this.attachTo(p.vehicle);
-        g.hud.toast('Deniz araca bindi');
+        this.attachTo(p.vehicle, occupied);
+        g.hud.toast(`${this.name} araca bindi`);
         return;
       }
       if (!rule.ok && vd < CHILD_BOARD_DIST && performance.now() - (this.ruleWarned || 0) > 4000) {
         this.ruleWarned = performance.now();
-        g.hud.toast(rule.reason);
+        g.hud.toast(`${this.name}: ${rule.reason}`);
       }
     }
 
@@ -217,18 +225,25 @@ export class Child {
     const dx = target.x - this.pos.x;
     const dz = target.z - this.pos.z;
     const td = Math.hypot(dx, dz) || 1;
-    const speed = followSpeed(pd, panic);
+    const speed = followSpeed(pd, panic, followDistance(this.order));
     let mx = speed > 0 ? dx / td : 0;
     let mz = speed > 0 ? dz / td : 0;
-    // Takılırsa yana kay
+    // Takılırsa yana kay; uzun süre ilerleyemezse oyuncunun arkasına geçer
     this.stuck += dt;
     if (this.stuck > 0.8) {
       if (speed > 1 && this.pos.distanceTo(this.lastPos) < speed * 0.8 * 0.3) {
         this.sidestep = rand(0.6, 1.2);
         this.sideSign = Math.random() < 0.5 ? 1 : -1;
+        this.blockedTime = (this.blockedTime || 0) + this.stuck;
+      } else {
+        this.blockedTime = 0;
       }
       this.lastPos.copy(this.pos);
       this.stuck = 0;
+    }
+    if (this.blockedTime > 5 && pd > 12) {
+      this.blockedTime = 0;
+      this.catchUp();
     }
     if (this.sidestep > 0) {
       this.sidestep -= dt;
@@ -247,9 +262,26 @@ export class Child {
     // Çok geride kalırsa uyarı
     if (pd > 25 && performance.now() - this.farWarned > 6000) {
       this.farWarned = performance.now();
-      g.radio.say('Deniz', 'Bekle beni! Çok hızlısın!');
+      g.radio.say(this.name, 'Bekle beni! Çok hızlısın!');
     }
     this.animate(dt, speed);
+  }
+
+  // Oyuncunun arkasında boş bir yere geç (yol bulamadığında)
+  catchUp() {
+    const g = this.game;
+    const p = g.player;
+    for (const back of [2.5, 3.5, 1.8]) {
+      for (const side of [0, 1.2, -1.2]) {
+        const x = p.pos.x + Math.sin(p.yaw) * back + Math.cos(p.yaw) * side;
+        const z = p.pos.z + Math.cos(p.yaw) * back - Math.sin(p.yaw) * side;
+        if (!g.collision.blockedAt(x, z, 0.35, 1.3)) {
+          this.pos.set(x, 0, z);
+          this.trail = [];
+          return;
+        }
+      }
+    }
   }
 
   animate(dt, speed) {

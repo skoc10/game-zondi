@@ -74,8 +74,8 @@ export class Explosives {
       }
     }
     if (g.vehicles) g.vehicles.onExplosion(p, radius, damage, occluded);
-    const child = g.child;
-    if (child && child.targetable) {
+    for (const child of g.children || []) {
+      if (!child.targetable) continue;
       const c = child.center;
       const d = c.distanceTo(p);
       if (d < radius) child.takeDamage(coveredExplosionDamage(d, radius, damage, occluded(c)) * 0.5, p);

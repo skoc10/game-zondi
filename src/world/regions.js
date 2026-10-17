@@ -145,24 +145,38 @@ function buildSchool(world) {
   world.block(x - 8.5, 2.3, z + 9, 3.2, 0.15, 0.15, '#c62828', false);
 }
 
-// 2. bölüm: okul kapısına çakılı tahtalar (levyeyle kırılır)
-export function buildSchoolBarricade(world) {
-  const { x, doorZ } = SCHOOL;
+// Kapı boşluğuna çakılı tahtalar (levye/silah/patlayıcıyla kırılır).
+// axis 'x': kapı z'ye bakan duvarda (tahtalar x boyunca); 'z': x'e bakan duvarda
+export function buildDoorBarricade(world, x, z, width, axis = 'x') {
   const g = new THREE.Group();
   const wood = mat('#8d6e3f');
   const dark = mat('#5d4325');
   [[0.5, 0.35], [1.2, -0.3], [1.9, 0.25], [0.9, 0]].forEach(([y, rot], i) => {
-    const plank = box(2.9, 0.22, 0.08, i % 2 ? dark : wood);
+    const plank = box(width + 0.4, 0.22, 0.08, i % 2 ? dark : wood);
     plank.position.set(0, y, 0);
     plank.rotation.z = rot;
     g.add(plank);
   });
-  g.position.set(x, 0, doorZ + 0.25);
+  g.position.set(x, 0, z);
+  if (axis === 'z') g.rotation.y = Math.PI / 2;
   world.root.add(g);
-  const bar = { mesh: g, pos: new THREE.Vector3(x, 1, doorZ + 0.25), hp: 90, alive: true };
-  bar.box = world.collision.add(boxFromBase(x, 0, doorZ + 0.25, 2.5, 2.6, 0.35, { kind: 'barricade', ref: bar }));
+  const bar = { mesh: g, pos: new THREE.Vector3(x, 1, z), hp: 90, alive: true };
+  const w = axis === 'x' ? width : 0.35;
+  const d = axis === 'x' ? 0.35 : width;
+  bar.box = world.collision.add(boxFromBase(x, 0, z, w, 2.6, d, { kind: 'barricade', ref: bar }));
   world.barricades.push(bar);
   return bar;
+}
+
+// 2. bölüm: üç çocuğun saklandığı yerlerin kapıları (sıra: okul, ambar, benzinlik)
+export const HIDEOUTS = [
+  { name: 'Deniz', place: 'OKUL', where: 'köydeki okulda', x: SCHOOL.x + 6.8, z: SCHOOL.z - 3.5, door: [SCHOOL.x, SCHOOL.doorZ + 0.25, 2.5, 'x'], coat: '#fdd835', pitch: 1 },
+  { name: 'Ela', place: 'AMBAR', where: 'çiftlikteki ambarda', x: -62, z: 44, door: [-45.6, 42, 5, 'z'], coat: '#ec407a', pitch: 1.15 },
+  { name: 'Can', place: 'BENZİNLİK', where: 'benzinlik dükkânında', x: 39.5, z: -54.5, door: [29.6, -52, 2.6, 'z'], coat: '#29b6f6', pitch: 0.9 },
+];
+
+export function buildHideoutBarricades(world) {
+  for (const h of HIDEOUTS) buildDoorBarricade(world, ...h.door);
 }
 
 // 2. bölüm: kuzey barikatı ışıklandırılmış güvenli kampa dönüşür

@@ -333,7 +333,7 @@ export class ZombieManager {
     const ppos = player.pos;
     const flashOn = player.flashOn && night > 0.5;
     const pf = player.forward();
-    const child = game.child && game.child.targetable ? game.child : null;
+    const kids = (game.children || []).filter((c) => c.targetable);
 
     for (let i = list.length - 1; i >= 0; i--) {
       const z = list[i];
@@ -350,10 +350,17 @@ export class ZombieManager {
       // Hedef: oyuncu ya da (yakınsa) yaya çocuk. Silahlılar hep oyuncuyu hedefler.
       let tpos = ppos;
       let targetChild = false;
-      if (child && !z.type.ranged) {
-        const dc = Math.hypot(child.pos.x - z.pos.x, child.pos.z - z.pos.z);
-        const dp = Math.hypot(ppos.x - z.pos.x, ppos.z - z.pos.z);
-        if (dc < dp || !player.alive) {
+      let child = null;
+      if (kids.length && !z.type.ranged) {
+        let best = player.alive ? Math.hypot(ppos.x - z.pos.x, ppos.z - z.pos.z) : Infinity;
+        for (const c of kids) {
+          const dc = Math.hypot(c.pos.x - z.pos.x, c.pos.z - z.pos.z);
+          if (dc < best) {
+            best = dc;
+            child = c;
+          }
+        }
+        if (child) {
           tpos = child.pos;
           targetChild = true;
         }
@@ -436,7 +443,7 @@ export class ZombieManager {
             z.attackCd = t.attackRate;
             z.attackAnim = 1;
             const dmg = t.damage * (1 + night * 0.2);
-            if (targetChild) game.hitChild(dmg, z.pos);
+            if (targetChild) game.hitChild(dmg, z.pos, child);
             else game.hitPlayer(dmg, z.pos);
             game.audio.play('bite', z.pos, 1, t.pitch);
             if (t.knockback && !veh && !targetChild) player.push(dx, dz, t.knockback);

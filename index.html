@@ -19,7 +19,7 @@
     <div id="top-left" class="panel">
       <div id="objective">Benzin bidonlarını bul</div>
       <div class="row" id="gas-row"><span class="gas-icon"></span> Benzin <b id="gas-count">0 / 5</b></div>
-      <div class="bar" id="child-row" style="display:none"><label>DENİZ</label><div class="track"><div id="child-fill" class="fill child"></div></div><b id="child-val"></b></div>
+      <div id="child-rows" style="display:none"></div>
     </div>
     <div id="top-right" class="panel">
       <div id="time-label">☀ Gündüz</div>
@@ -63,10 +63,23 @@
       <p class="sub">Arabanın deposu boş. Gece yaklaşıyor.<br/>5 benzin bidonu bul, arabaya dök ve kaç!</p>
       <div class="menu-item btn primary" data-action="continue" id="btn-continue" style="display:none">DEVAM ET: 2. BÖLÜM</div>
       <div class="menu-item btn primary" data-action="play">OYNA (1. BÖLÜM)</div>
+      <div class="menu-item btn" data-action="levels" id="btn-levels">BÖLÜM SEÇ (TEST)</div>
       <div class="menu-item btn" data-action="controls">KONTROLLER</div>
       <div class="menu-item btn" data-action="settings">AYARLAR</div>
-      <p class="version">Sürüm 0.6 · 2. bölüm · nişan tuşu ayarı</p>
+      <p class="version">Sürüm 0.7 · 4 bölüm · bölüm seçimi</p>
       <p class="pad-status" id="pad-status">Oyun kolu: bağlı değil (bağlamak için koldaki bir tuşa bas)</p>
+    </div>
+  </div>
+
+  <div id="menu-levels" class="screen">
+    <div class="menu-box">
+      <h2>BÖLÜM SEÇ</h2>
+      <p class="sub">Test için tüm bölümler açık. Doğrudan başlatılan bölüm hazır eşyalarla gelir.</p>
+      <div class="menu-item btn" data-action="level-1">1. Benzin Bitmeden</div>
+      <div class="menu-item btn" data-action="level-2">2. Mahsur Çocuklar</div>
+      <div class="menu-item btn" data-action="level-3">3. Nükleer Tesis</div>
+      <div class="menu-item btn" data-action="level-4">4. Roket ve Uzay İstasyonu</div>
+      <div class="menu-item btn" data-action="back">GERİ</div>
     </div>
   </div>
 

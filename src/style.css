@@ -120,7 +120,8 @@ h2 { font-size: 34px; color: #9cff57; letter-spacing: 3px; margin-bottom: 8px; }
 #prompt.nokey #prompt-key { display: none; }
 
 .fill.child { background: linear-gradient(90deg, #f9a825, #fff176); }
-#child-row b { width: 60px; font-size: 13px; }
+#child-rows .bar label { width: 52px; }
+#child-rows .bar b { width: 70px; font-size: 12px; }
 .compass-mark.safe b { background: #2e7d32; }
 .compass-mark.child b { background: #f9a825; color: #222; }
 #radio { left: 14px; bottom: 120px; width: 380px; border-color: rgba(120, 220, 255, 0.35); background: rgba(5, 20, 30, 0.75); }

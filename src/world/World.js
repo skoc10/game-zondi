@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { boxFromBase } from '../core/Collision.js';
 import { mulberry32 } from '../core/math.js';
 import { box, mat, glowMat, part, BOX_GEO } from './materials.js';
-import { buildVillage, buildBarricade, buildMilitaryBase, buildRunway, buildSchoolBarricade, buildSafeCamp, road, CLEAR_ZONES, BASE, RUNWAY } from './regions.js';
+import { buildVillage, buildBarricade, buildMilitaryBase, buildRunway, buildHideoutBarricades, buildSafeCamp, road, CLEAR_ZONES, BASE, RUNWAY } from './regions.js';
 
 export const MAP_HALF = 225; // Oynanabilir alan ±225 m
 
@@ -76,10 +76,9 @@ export class World {
     this.buildWrecks();
     buildVillage(this);
     buildBarricade(this);
-    if (this.level === 2) {
-      buildSchoolBarricade(this);
-      buildSafeCamp(this);
-    }
+    if (this.level === 2) buildHideoutBarricades(this);
+    // Güvenli kamp 2. bölümden itibaren kurulu
+    if (this.level >= 2) buildSafeCamp(this);
     buildMilitaryBase(this);
     buildRunway(this);
     this.buildBarrels();

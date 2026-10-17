@@ -20,7 +20,7 @@ export class HUD {
       compass: $('compass-strip'), toasts: $('toasts'), hurt: $('hurt'), hurtDir: $('hurt-dir'),
       crosshair: $('crosshair'), hitmarker: $('hitmarker'), banner: $('banner'), flash: $('flashlight-state'),
       lowhp: $('lowhp'),
-      gasRow: $('gas-row'), childRow: $('child-row'), childFill: $('child-fill'), childVal: $('child-val'),
+      gasRow: $('gas-row'), childRows: $('child-rows'),
       vPanel: $('vehicle-panel'), vName: $('veh-name'), vSpeed: $('veh-speed'), vFuel: $('veh-fuel'),
       vHp: $('veh-hp'), vExtra: $('veh-extra'), vHelp: $('veh-help'), weaponPanel: $('bottom-right'),
     };
@@ -160,9 +160,7 @@ export class HUD {
     let obj;
     if (m) {
       obj = m.objective();
-      const c = m.counter();
-      this.set('cv', this.el.childVal, 'textContent', c.value);
-      this.set('cf', this.el.childFill.style, 'width', `${Math.max(0, c.frac) * 100}%`);
+      this.updateCounters(m.counters ? m.counters() : []);
     } else {
       const delivered = g.gasDelivered;
       if (delivered >= GAS_REQUIRED) obj = 'Depo dolu! Arabaya bin ve KAÇ!';
@@ -172,7 +170,7 @@ export class HUD {
     }
     this.set('obj', this.el.objective, 'textContent', obj);
     this.set('gasrow', this.el.gasRow.style, 'display', m ? 'none' : '');
-    this.set('childrow', this.el.childRow.style, 'display', m ? '' : 'none');
+    this.set('childrow', this.el.childRows.style, 'display', m ? '' : 'none');
 
     const info = g.dayNight.phaseInfo();
     this.set('time', this.el.time, 'textContent', `${info.icon} ${info.label} · ${formatTime(info.remaining)}`);
@@ -211,6 +209,30 @@ export class HUD {
     }
 
     this.updateCompass(g);
+  }
+
+  // Görev sayaçları: çocuk canları, boss canı, geri sayım vb. [{ label, value, frac, color }]
+  updateCounters(list) {
+    const box = this.el.childRows;
+    while (box.children.length > list.length) box.lastChild.remove();
+    list.forEach((c, i) => {
+      let row = box.children[i];
+      if (!row) {
+        row = document.createElement('div');
+        row.className = 'bar';
+        row.innerHTML = '<label></label><div class="track"><div class="fill child"></div></div><b></b>';
+        box.appendChild(row);
+      }
+      const [label, track, val] = row.children;
+      if (label.textContent !== c.label) label.textContent = c.label;
+      if (val.textContent !== c.value) val.textContent = c.value;
+      const fill = track.firstChild;
+      fill.style.width = `${Math.max(0, Math.min(1, c.frac)) * 100}%`;
+      if (c.color && fill.dataset.color !== c.color) {
+        fill.dataset.color = c.color;
+        fill.style.background = c.color;
+      }
+    });
   }
 
   updateVehicle(v, g, dev) {

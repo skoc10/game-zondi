@@ -19,7 +19,8 @@ import { HUD } from '../ui/HUD.js';
 import { Menu } from '../ui/Menu.js';
 import { Radio } from '../ui/Radio.js';
 import { RescueMission } from '../levels/RescueMission.js';
-import { loadProgress, saveProgress } from './Progress.js';
+import { loadProgress, saveProgress, LAST_LEVEL, LEVEL_SELECT_UNLOCKED } from './Progress.js';
+import { applyLoadout } from '../levels/loadouts.js';
 import { randInt, chance, pickWeighted, rand, formatTime } from './math.js';
 
 export class Game {
@@ -80,7 +81,8 @@ export class Game {
   buildScene(level = 1) {
     if (this.mission) this.mission.dispose();
     this.mission = null;
-    this.child = null;
+    this.children = [];
+    this.deadChild = null;
     this.level = level;
     this.radio.clear();
     this.disposeScene();
@@ -122,11 +124,15 @@ export class Game {
     this.dayNight.time = 222;
     this.hud.show(false);
     // Kayıtlı ilerleme varsa "Devam et" görünür
-    document.getElementById('btn-continue').style.display = loadProgress() ? '' : 'none';
+    const prog = loadProgress();
+    const cont = document.getElementById('btn-continue');
+    cont.style.display = prog ? '' : 'none';
+    if (prog) cont.textContent = `DEVAM ET: ${prog.level}. BÖLÜM`;
+    document.getElementById('btn-levels').style.display = LEVEL_SELECT_UNLOCKED ? '' : 'none';
     this.menu.open('menu-main');
   }
 
-  // level 2: carry = 1. bölümden taşınan eşya/can
+  // carry: önceki bölümden taşınan eşya/can; yoksa bölümün hazır eşyaları verilir
   newGame(level = 1, carry = null) {
     this.audio.stopEngine();
     this.buildScene(level);
@@ -138,21 +144,11 @@ export class Game {
       this.inventory.restore(carry.inventory);
       this.player.health = Math.max(60, Math.min(100, carry.health || 100));
       this.player.armor = Math.max(0, Math.min(100, carry.armor || 0));
+    } else {
+      applyLoadout(level, this.inventory, this.player);
     }
-    if (level === 2) {
-      if (!carry) {
-        // Kayıt yoksa temel eşyalar
-        this.inventory.addWeapon('pistol', 36);
-        this.inventory.select(1);
-      }
-      this.dayNight.time = 250;
-      // Gece zaten başlamış: "gece çöküyor" yazısı bölüm başlığını örtmesin
-      this.wasNight = true;
-      this.spawner.elapsed = 150;
+    if (this.mission) {
       this.mission.start();
-      const sedan = this.vehicles.list.find((v) => v.typeKey === 'sedan');
-      this.vehicles.enter(sedan);
-      this.hud.banner('2. BÖLÜM: OKULDAKİ ÇOCUK', 4);
     } else {
       this.hud.banner('BENZİNİ BUL!', 3);
       this.hud.toast('Elinde sadece levye ve fener var. Silahlı zombilerden silah al!');
@@ -161,12 +157,15 @@ export class Game {
     this.audio.resume();
   }
 
-  hitChild(amount, fromPos) {
-    if (this.child) this.child.takeDamage(amount, fromPos);
+  hitChild(amount, fromPos, child) {
+    if (child) child.takeDamage(amount, fromPos);
   }
 
-  onChildDied() {
-    this.hud.banner('DENİZ ÖLDÜ', 3);
+  onChildDied(child) {
+    if (this.deadChild) return;
+    this.deadChild = child;
+    if (this.mission) this.mission.deadChild = child;
+    this.hud.banner(`${child.name.toUpperCase()} ÖLDÜ`, 3);
     this.childDeadTimer = 0;
   }
 
@@ -200,12 +199,21 @@ export class Game {
       case 'play':
         this.newGame(1);
         break;
-      case 'restart':
-        this.newGame(this.level, this.level === 2 ? loadProgress() : null);
+      case 'restart': {
+        // Kayıt bu bölüme aitse eşyalarla, değilse hazır eşyalarla baştan
+        const prog = loadProgress();
+        this.newGame(this.level, prog && prog.level === this.level ? prog : null);
         break;
+      }
       case 'next':
-      case 'continue':
-        this.newGame(2, loadProgress());
+      case 'continue': {
+        const prog = loadProgress();
+        if (prog) this.newGame(prog.level, prog);
+        break;
+      }
+      case 'levels':
+        this.menuReturn = 'menu-main';
+        this.menu.open('menu-levels', 'back');
         break;
       case 'resume':
         this.resume();
@@ -238,6 +246,8 @@ export class Game {
         document.getElementById('fade').classList.remove('show');
         break;
       default:
+        // Bölüm seçimi: level-1 … level-4
+        if (action.startsWith('level-')) this.newGame(parseInt(action.slice(6), 10), null);
         break;
     }
   }
@@ -464,24 +474,20 @@ export class Game {
     this.hud.show(false);
     let title;
     let sub;
-    if (this.level === 1) {
+    if (this.mission) {
+      ({ title, sub } = this.mission.endText(win, reason));
+    } else {
       title = win ? 'KAÇTIN!' : 'ÖLDÜN';
       sub = win ? 'Depo doldu, motor çalıştı, zombiler arkada kaldı.' : `Benzin: ${this.gasDelivered} / ${GAS_REQUIRED} — zombiler seni yakaladı.`;
-      // 2. bölüme eşyalarla devam
-      if (win) saveProgress({ level: 2, inventory: this.inventory.serialize(), health: this.player.health, armor: this.player.armor });
-    } else if (win) {
-      title = 'DENİZ KURTARILDI!';
-      sub = 'Kuzey Kontrol Noktası çocuğu teslim aldı. Şimdilik ikiniz de güvendesiniz.';
-    } else if (reason === 'child') {
-      title = 'DENİZ ÖLDÜ';
-      sub = 'Çocuğu koruyamadın. Bir daha dene.';
-    } else {
-      title = 'ÖLDÜN';
-      sub = 'Deniz yalnız kaldı...';
     }
+    const hasNext = win && this.level < LAST_LEVEL;
+    // Sonraki bölüme eşyalarla devam
+    if (hasNext) saveProgress({ level: this.level + 1, inventory: this.inventory.serialize(), health: this.player.health, armor: this.player.armor });
     document.getElementById('end-title').textContent = title;
     document.getElementById('end-sub').textContent = sub;
-    document.getElementById('btn-next').style.display = this.level === 1 && win ? '' : 'none';
+    const next = document.getElementById('btn-next');
+    next.style.display = hasNext ? '' : 'none';
+    next.textContent = `${this.level + 1}. BÖLÜME DEVAM`;
     const rows = [
       ['Süre', formatTime(this.stats.time)],
       ['Öldürülen zombi', this.stats.kills],
@@ -596,7 +602,7 @@ export class Game {
           this.deathTimer += dt;
           if (this.deathTimer > 2.2) this.showEnd(false);
         }
-        if (this.state === 'playing' && this.child && !this.child.alive) {
+        if (this.state === 'playing' && this.deadChild) {
           this.childDeadTimer += dt;
           if (this.childDeadTimer > 2.5) this.showEnd(false, 'child');
         }

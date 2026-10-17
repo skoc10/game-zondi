@@ -276,9 +276,10 @@ export class VehicleManager {
       this.exit(true);
       if (highUp) g.player.takeDamage(35, null);
     }
-    if (g.child && g.child.vehicle === v) {
-      g.child.leaveVehicle(v);
-      g.child.takeDamage(30, null);
+    for (const c of g.children || []) {
+      if (c.vehicle !== v) continue;
+      c.leaveVehicle(v);
+      c.takeDamage(30, null);
     }
     this.unpark(v);
     v.body.traverse((o) => {
