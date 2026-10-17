@@ -47,10 +47,10 @@ export class LaunchMission {
     g.player.pos.set(L.start.x, 0, L.start.z);
     g.player.yaw = Math.atan2(-(L.console.x - L.start.x), -(L.console.z - L.start.z));
     // Patlamadan sonra zombiler hızla çoğalıyor
-    g.spawner.boost = 2;
-    g.spawner.elapsed = 300;
+    g.spawner.boost = 1.3;
+    g.spawner.elapsed = 150;
     let n = 0;
-    for (let k = 0; k < 120 && n < 18; k++) {
+    for (let k = 0; k < 120 && n < 10; k++) {
       const x = rand(L.minX + 4, L.maxX - 2);
       const z = rand(L.minZ + 4, L.maxZ - 2);
       if (g.collision.blockedAt(x, z, 0.7, 2)) continue;
@@ -129,7 +129,7 @@ export class LaunchMission {
 
   restoreState(d) {
     const g = this.game;
-    g.spawner.boost = 2;
+    g.spawner.boost = 1.3;
     this.started = !!d.started;
     this.defendLeft = Number.isFinite(d.defendLeft) ? d.defendLeft : DEFEND_TIME;
     this.console.hp = Number.isFinite(d.consoleHp) ? d.consoleHp : CONSOLE_HP;
@@ -144,7 +144,7 @@ export class LaunchMission {
     g.hud.banner(`FIRLATMA SAYIMI: ${DEFEND_TIME} SN`, 3.5);
     g.radio.say('Komutan', 'Sayım başladı! Zombiler sesi duydu, konsola saldıracaklar. Ne pahasına olursa olsun koru!', 6);
     g.audio.play('siren', null, 0.7);
-    g.zombies.chaseCap = 24;
+    g.zombies.chaseCap = 14;
     g.zombies.alert(this.console.pos, 90);
     g.input.rumble(0.4, 0.4, 300);
   }
@@ -207,7 +207,7 @@ export class LaunchMission {
   wave(count) {
     const g = this.game;
     const C = this.console.pos;
-    if (g.zombies.countNear(C.x, C.z, 60) > 30) return;
+    if (g.zombies.countNear(C.x, C.z, 60) > 18) return;
     for (let i = 0; i < count; i++) {
       for (let k = 0; k < 10; k++) {
         const a = rand(0, Math.PI * 2);

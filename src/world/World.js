@@ -8,9 +8,8 @@ import { buildVillage, buildBarricade, buildMilitaryBase, buildRunway, buildHide
 
 export const MAP_HALF = 225; // Oynanabilir alan ±225 m
 
-// Kaçış için gereken benzin bidonu sayısı.
-// GEÇİCİ: 2. bölümü hızlı test etmek için 1. Test bitince 5'e geri alınacak.
-export const GAS_REQUIRED = 1;
+// Kaçış için gereken benzin bidonu sayısı (haritada 5 bidon var)
+export const GAS_REQUIRED = 3;
 
 // Benzin bidonlarının yerleri (ad, konum)
 export const GAS_SPOTS = [

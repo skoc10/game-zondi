@@ -2,7 +2,7 @@
 
 Basit, hızlı ve eğlenceli bir birinci şahıs zombi hayatta kalma oyunu. Grafikler Three.js ile kutu tarzında.
 
-Gece, deposu boş bir arabanın yanında doğuyorsun. Elinde sadece **fener** ve **levye** var. Haritadaki **5 benzin bidonunu** bul, arabaya dök ve kaç! İstersen yolda bulduğun cipe, tanka, helikoptere ya da uçağa binip zombileri ez veya havadan bombala. Zombiler yeşil ve kafaları dikdörtgen. Silahlı zombileri öldürüp silahlarını alabilirsin. Variller, TNT ve C4 ile hepsini havaya uçurabilirsin.
+Gece, deposu boş bir arabanın yanında doğuyorsun. Elinde sadece **fener** ve **levye** var. Haritadaki 5 benzin bidonundan **3'ünü** bul, arabaya dök ve kaç! İstersen yolda bulduğun cipe, tanka, helikoptere ya da uçağa binip zombileri ez veya havadan bombala. Zombiler yeşil ve kafaları dikdörtgen. Silahlı zombileri öldürüp silahlarını alabilirsin. Variller, TNT ve C4 ile hepsini havaya uçurabilirsin.
 
 ## Bölümler
 
@@ -27,7 +27,7 @@ Gece, deposu boş bir arabanın yanında doğuyorsun. Elinde sadece **fener** ve
 
 İlerleme tarayıcıda kaydedilir. Bölüm sonundaki **"N. BÖLÜME DEVAM"** ya da ana menüdeki **"DEVAM ET"** ile eşyalarınla sonraki bölüme geçersin.
 
-> **Geçici test ayarları:** Ana menüdeki **BÖLÜM SEÇ** ile her bölüm (ve doğrudan uzay istasyonu) hazır eşyalarla başlatılabilir (`LEVEL_SELECT_UNLOCKED`, `src/core/Progress.js`). 1. bölümde tek benzin bidonu yeterli (`GAS_REQUIRED`, `src/world/World.js`). Testler bitince bölümler sırayla açılacak ve benzin 5'e dönecek.
+**Bölüm seçimi:** Bölümler sırayla açılır. Ana menüdeki **BÖLÜM SEÇ** ile bitirdiğin bölümleri (ve fırlatmadan sonra uzay istasyonunu) hazır eşyalarla yeniden oynayabilirsin; henüz açılmamış bölümler kilitlidir.
 
 ## Çalıştırma
 

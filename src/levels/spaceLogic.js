@@ -15,7 +15,7 @@ export function launchStage({ started, defendLeft, boarded }) {
 // Savunma dalgaları: sayım ilerledikçe sıklaşır ve büyür
 export function defenseWave(defendLeft) {
   const p = 1 - Math.max(0, defendLeft) / DEFEND_TIME;
-  return { interval: 4 - p * 1.8, count: 2 + Math.round(p * 3) };
+  return { interval: 5 - p * 1.8, count: 1 + Math.round(p * 2) };
 }
 
 // Kraliçe aşamaları: %66 ve %33 eşikleri

@@ -25,7 +25,7 @@ import { RescueMission } from '../levels/RescueMission.js';
 import { ReactorMission } from '../levels/ReactorMission.js';
 import { LaunchMission } from '../levels/LaunchMission.js';
 import { StationMission } from '../levels/StationMission.js';
-import { loadProgress, saveProgress, LAST_LEVEL, LEVEL_SELECT_UNLOCKED } from './Progress.js';
+import { loadProgress, saveProgress, LAST_LEVEL, unlockLevel, isUnlocked } from './Progress.js';
 import { applyLoadout } from '../levels/loadouts.js';
 import { loadSave, writeSave, clearSave, saveMatches, saveBlockReason, captureSave, applySave } from './SaveGame.js';
 import { randInt, chance, pickWeighted, rand, formatTime } from './math.js';
@@ -149,7 +149,6 @@ export class Game {
     const cont = document.getElementById('btn-continue');
     cont.style.display = prog ? '' : 'none';
     if (prog) cont.textContent = `DEVAM ET: ${prog.level}. BÖLÜM${prog.sub === 'space' ? ' (UZAY)' : ''}${save ? ' · KAYIT' : ''}`;
-    document.getElementById('btn-levels').style.display = LEVEL_SELECT_UNLOCKED ? '' : 'none';
     this.menu.open('menu-main');
   }
 
@@ -305,6 +304,7 @@ export class Game {
         }
         break;
       case 'levels':
+        this.renderLevelLocks();
         this.menuReturn = 'menu-main';
         this.menu.open('menu-levels', 'back');
         break;
@@ -340,8 +340,12 @@ export class Game {
         break;
       default:
         // Bölüm seçimi: level-1 … level-4
-        if (action === 'level-4s') this.newGame(4, null, 'space');
-        else if (action.startsWith('level-')) this.newGame(parseInt(action.slice(6), 10), null);
+        if (action.startsWith('level-')) {
+          const sub = action === 'level-4s' ? 'space' : null;
+          const level = parseInt(action.slice(6), 10);
+          // Kilitli bölüm başlamaz
+          if (isUnlocked(level, sub)) this.newGame(level, null, sub);
+        }
         break;
     }
   }
@@ -553,10 +557,22 @@ export class Game {
     }
   }
 
+  // Bölüm seç menüsü: bitirilmemiş bölümler kilitli
+  renderLevelLocks() {
+    for (const el of document.querySelectorAll('#menu-levels [data-action^="level-"]')) {
+      const action = el.dataset.action;
+      const open = isUnlocked(parseInt(action.slice(6), 10), action === 'level-4s' ? 'space' : null);
+      el.classList.toggle('locked', !open);
+      if (!el.dataset.label) el.dataset.label = el.textContent;
+      el.textContent = open ? el.dataset.label : `🔒 ${el.dataset.label}`;
+    }
+  }
+
   // Fırlatma sahnesinden sonra uzay istasyonu (eşyalar taşınır, kayıt alınır)
   enterSpace() {
     const carry = { level: 4, sub: 'space', inventory: this.inventory.serialize(), health: this.player.health, armor: this.player.armor };
     saveProgress(carry);
+    unlockLevel(4, true);
     this.newGame(4, carry, 'space');
   }
 
@@ -592,6 +608,7 @@ export class Game {
     const load = document.getElementById('btn-load');
     load.style.display = saveMatches(save, this.level, this.sub) ? '' : 'none';
     // Sonraki bölüme eşyalarla devam
+    if (hasNext) unlockLevel(this.level + 1);
     if (hasNext) saveProgress({ level: this.level + 1, inventory: this.inventory.serialize(), health: this.player.health, armor: this.player.armor });
     document.getElementById('end-title').textContent = title;
     document.getElementById('end-sub').textContent = sub;

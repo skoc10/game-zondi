@@ -102,3 +102,31 @@ describe('bölümler arası taşıma', () => {
     expect(loadProgress(undefined)).toBeNull();
   });
 });
+
+describe('bölüm kilitleri', () => {
+  it('başta yalnız 1. bölüm açık, bitirdikçe sıradaki açılır', async () => {
+    const { isUnlocked, unlockLevel, loadUnlocked } = await import('../src/core/Progress.js');
+    const st = memoryStorage();
+    expect(isUnlocked(1, null, st)).toBe(true);
+    expect(isUnlocked(2, null, st)).toBe(false);
+    unlockLevel(3, false, st);
+    expect([1, 2, 3, 4].map((l) => isUnlocked(l, null, st))).toEqual([true, true, true, false]);
+    // Geri gitmez
+    unlockLevel(2, false, st);
+    expect(loadUnlocked(st).level).toBe(3);
+    unlockLevel(4, false, st);
+    expect(isUnlocked(4, 'space', st)).toBe(false);
+    unlockLevel(4, true, st);
+    expect(isUnlocked(4, 'space', st)).toBe(true);
+  });
+
+  it('bozuk kilit kaydı yok sayılır; eski ilerleme kaydı bölümü açar', async () => {
+    const { isUnlocked, saveProgress } = await import('../src/core/Progress.js');
+    const st = memoryStorage();
+    st.setItem('zondi-acik', '{bozuk');
+    expect(isUnlocked(2, null, st)).toBe(false);
+    saveProgress({ level: 3 }, st);
+    expect(isUnlocked(3, null, st)).toBe(true);
+    expect(isUnlocked(4, null, st)).toBe(false);
+  });
+});
