@@ -19,6 +19,8 @@ export class HUD {
       compass: $('compass-strip'), toasts: $('toasts'), hurt: $('hurt'), hurtDir: $('hurt-dir'),
       crosshair: $('crosshair'), hitmarker: $('hitmarker'), banner: $('banner'), flash: $('flashlight-state'),
       lowhp: $('lowhp'),
+      vPanel: $('vehicle-panel'), vName: $('veh-name'), vSpeed: $('veh-speed'), vFuel: $('veh-fuel'),
+      vHp: $('veh-hp'), vExtra: $('veh-extra'), vHelp: $('veh-help'), weaponPanel: $('bottom-right'),
     };
     this.slotEls = SLOTS.map((_, i) => {
       const d = document.createElement('div');
@@ -107,6 +109,12 @@ export class HUD {
     this.set('st', this.el.stamina.style, 'width', `${p.stamina * 100}%`);
     this.el.lowhp.style.opacity = p.health < 30 && p.alive ? String(0.4 + Math.sin(performance.now() / 200) * 0.2) : '0';
 
+    const veh = p.vehicle;
+    this.el.vPanel.classList.toggle('hidden', !veh);
+    this.el.weaponPanel.classList.toggle('hidden', !!veh);
+    this.el.slots.classList.toggle('hidden', !!veh);
+    if (veh) this.updateVehicle(veh, g, dev);
+
     // Silah ve mermi
     const id = inv.activeId;
     let wname = WEAPONS[id].name;
@@ -163,6 +171,7 @@ export class HUD {
     const pr = g.prompt;
     if (pr) {
       this.el.prompt.classList.add('show');
+      this.el.prompt.classList.toggle('nokey', !!pr.noKey);
       this.set('pk', this.el.promptKey, 'textContent', glyph('interact', dev, ps) + (pr.hold ? ' basılı tut' : ''));
       this.set('pt', this.el.promptText, 'textContent', pr.text);
       this.el.promptBar.style.width = `${(pr.progress || 0) * 100}%`;
@@ -181,6 +190,8 @@ export class HUD {
     const spread = 1 + p.speed * 0.6 + (p.onGround ? 0 : 6) - g.weapons.aim * 4;
     this.el.crosshair.style.setProperty('--gap', `${Math.max(3, 6 + spread)}px`);
     this.el.crosshair.classList.toggle('melee', id === 'crowbar');
+    // Araçta nişangah sadece silahlı araçlarda
+    this.el.crosshair.style.display = !veh || veh.typeKey === 'tank' || veh.typeKey === 'heli' ? '' : 'none';
 
     if (this.bannerTimer > 0) {
       this.bannerTimer -= dt;
@@ -188,6 +199,36 @@ export class HUD {
     }
 
     this.updateCompass(g);
+  }
+
+  updateVehicle(v, g, dev) {
+    const st = v.state;
+    const spec = v.spec;
+    this.set('vn', this.el.vName, 'textContent', spec.name);
+    this.set('vs', this.el.vSpeed, 'textContent', `${Math.round(Math.abs(st.speed) * 3.6)} km/sa`);
+    this.set('vf', this.el.vFuel.style, 'width', `${(st.fuel / spec.fuel) * 100}%`);
+    this.set('vh', this.el.vHp.style, 'width', `${Math.max(0, v.hp / spec.hp) * 100}%`);
+    let extra = '';
+    if (v.isAir) {
+      const ground = g.collision.groundHeight(st.x, st.z, 1, st.y + 0.01, 0.5);
+      extra = `İrtifa ${Math.round(st.y - ground)} m`;
+    }
+    if (spec.kind === 'plane') {
+      extra += ` · Gaz %${Math.round(st.throttleSet * 100)}`;
+      if (st.onGround) extra += st.speed < spec.takeoff ? ` · Kalkış için ${Math.round(spec.takeoff * 3.6)} km/sa` : ' · Burnu kaldır!';
+      else if (st.speed < spec.minSpeed) extra += ' · STALL!';
+    }
+    if (v.typeKey === 'tank') extra = v.cooldown > 0 ? 'Top: dolduruluyor...' : 'Top: HAZIR';
+    if (v.typeKey === 'heli' || v.typeKey === 'plane') extra += v.cooldown2 > 0 ? ' · Bomba: ...' : ' · Bomba: hazır';
+    if (st.fuel <= 0) extra = 'YAKIT BİTTİ — pompaya git';
+    this.set('vx', this.el.vExtra, 'textContent', extra);
+    const pad = dev === 'pad';
+    const help = {
+      ground: pad ? 'RT gaz · LT fren · X in' : 'W/S gaz · A/D yön · Space fren · E in',
+      heli: pad ? 'RT yüksel · LT alçal · RB ateş · LB bomba · X in' : 'Space yüksel · C alçal · sol tık ateş · sağ tık bomba · E in',
+      plane: pad ? 'RT/LT gaz · sol çubuk yön · RB bomba · X in' : 'W/S gaz · fare yön · sol tık bomba · E in',
+    }[spec.kind];
+    this.set('vhelp', this.el.vHelp, 'textContent', help);
   }
 
   updateCompass(g) {

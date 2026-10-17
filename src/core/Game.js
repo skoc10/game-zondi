@@ -13,6 +13,7 @@ import { ZombieManager } from '../entities/Zombie.js';
 import { Spawner } from '../entities/Spawner.js';
 import { Explosives } from '../entities/Explosives.js';
 import { WeaponSystem } from '../weapons/WeaponSystem.js';
+import { VehicleManager } from '../vehicles/VehicleManager.js';
 import { WEAPONS, SLOTS, DROP_AMMO, BOX_AMMO, THROWABLES, ITEM_MAX } from '../weapons/weaponData.js';
 import { HUD } from '../ui/HUD.js';
 import { Menu } from '../ui/Menu.js';
@@ -86,6 +87,7 @@ export class Game {
     this.spawner = new Spawner(this.zombies, this.collision);
     this.explosives = new Explosives(this.scene, this);
     this.weapons = new WeaponSystem(this);
+    this.vehicles = new VehicleManager(this);
     this.inventory.reset();
     GAS_SPOTS.forEach((s, i) => this.pickups.spawn('gas', s.x, s.z, { spot: i }));
     this.spawner.populate();
@@ -97,7 +99,7 @@ export class Game {
     this.deathTimer = 0;
     this.escapeTime = 0;
     this.nights = 0;
-    this.stats = { kills: 0, headshots: 0, explosionKills: 0, explosions: 0, time: 0 };
+    this.stats = { kills: 0, headshots: 0, explosionKills: 0, roadkills: 0, explosions: 0, time: 0 };
     if (this.weapons) this.resize();
   }
 
@@ -111,6 +113,7 @@ export class Game {
   }
 
   newGame() {
+    this.audio.stopEngine();
     this.buildScene();
     this.state = 'playing';
     this.menu.close();
@@ -125,6 +128,7 @@ export class Game {
   pause() {
     if (this.state !== 'playing') return;
     this.state = 'paused';
+    this.audio.stopEngine();
     this.audio.setPouring(false);
     this.input.exitLock();
     this.menuReturn = 'menu-pause';
@@ -133,6 +137,7 @@ export class Game {
 
   resume() {
     this.state = 'playing';
+    if (this.player.vehicle) this.audio.startEngine(this.player.vehicle.typeKey);
     this.menu.close();
     if (this.input.lastDevice !== 'pad') this.input.requestLock();
   }
@@ -167,6 +172,7 @@ export class Game {
         break;
       case 'quit':
         this.input.exitLock();
+        this.audio.stopEngine();
         this.audio.setPouring(false);
         this.buildScene();
         this.enterMenuBackground();
@@ -179,6 +185,21 @@ export class Game {
 
   addShake(v) {
     this.shake = Math.min(1.5, this.shake + v);
+  }
+
+  // Zombi saldırısı/mermisi: oyuncu araçtaysa hasar araca gider
+  hitPlayer(amount, fromPos) {
+    const v = this.player.vehicle;
+    if (v) {
+      this.vehicles.damage(v, amount * v.spec.armor);
+      if (v.spec.exposed) {
+        this.player.takeDamage(amount * 0.5, fromPos);
+        this.onPlayerHit(amount * 0.5);
+      }
+      return;
+    }
+    this.player.takeDamage(amount, fromPos);
+    this.onPlayerHit(amount);
   }
 
   onPlayerHit(dmg) {
@@ -338,6 +359,12 @@ export class Game {
       if (s.interactPressed) this.collect(pk);
       return;
     }
+    const veh = this.vehicles.nearest(p.pos);
+    if (veh) {
+      this.prompt = { text: this.vehicles.enterLabel(veh) };
+      if (s.interactPressed) this.vehicles.enter(veh);
+      return;
+    }
     const blocked = this.pickups.nearest(p.pos, 2.2);
     if (blocked) this.prompt = { text: this.blockReason(blocked) };
   }
@@ -359,6 +386,7 @@ export class Game {
   }
 
   startEscape() {
+    this.audio.stopEngine();
     this.state = 'escaping';
     this.escapeTime = 0;
     this.prompt = null;
@@ -369,6 +397,7 @@ export class Game {
 
   showEnd(win) {
     this.state = 'end';
+    this.audio.stopEngine();
     this.input.exitLock();
     this.audio.setPouring(false);
     this.hud.show(false);
@@ -381,6 +410,7 @@ export class Game {
       ['Öldürülen zombi', this.stats.kills],
       ['Kafadan vuruş', this.stats.headshots],
       ['Patlamayla öldürülen', this.stats.explosionKills],
+      ['Araçla ezilen', this.stats.roadkills],
       ['Patlama sayısı', this.stats.explosions],
       ['Atlatılan gece', this.nights],
     ];
@@ -407,16 +437,23 @@ export class Game {
       this.player.flashOn = !this.player.flashOn;
       this.audio.play('empty');
     }
-    this.player.update(dt, s, night, this.shake);
+    const wasDriving = !!this.player.vehicle;
+    if (!wasDriving) this.player.update(dt, s, night, this.shake);
+    this.prompt = null;
+    this.vehicles.update(dt, s);
+    const driving = !!this.player.vehicle;
+    if (driving) this.vehicles.updateCamera(dt, s);
+    else if (wasDriving) this.player.update(0, this.input.emptyState(), night, 0);
     this.audio.setListener(this.player.pos.x, this.player.pos.z, this.player.yaw);
-    if (this.player.alive) this.weapons.update(dt, s);
+    if (this.player.alive && !driving && !wasDriving) this.weapons.update(dt, s);
     this.zombies.update(dt, this.player, night);
     this.spawner.update(dt, this.player, night);
     this.explosives.update(dt);
     this.pickups.update(dt);
     this.particles.update(dt);
-    if (this.player.alive) this.updateInteraction(dt, s);
-    else this.prompt = null;
+    // Araçtan inildiği karede aynı tuş tekrar binmesin
+    if (this.player.alive && !driving && !wasDriving) this.updateInteraction(dt, s);
+    else if (!driving) this.prompt = null;
     this.shake = Math.max(0, this.shake - dt * 2.5);
     this.audio.updateMusic(night, true);
     this.hud.update(dt, this);

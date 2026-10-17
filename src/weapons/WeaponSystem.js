@@ -284,6 +284,8 @@ export class WeaponSystem {
       g.audio.play('wood', data.ref.pos, 0.6);
       g.particles.emit({ pos: data.ref.pos.clone().setY(0.8), count: 4, colors: ['#8d6e3f', '#5d4325'], speed: 2, up: 1, life: 0.6, size: 0.08 });
       if (data.ref.hp <= 0) g.breakCrate(data.ref);
+    } else if (data.kind === 'vehicle' && data.ref.alive) {
+      g.vehicles.damage(data.ref, dmg * data.ref.spec.armor);
     }
   }
 
@@ -481,7 +483,7 @@ export class WeaponSystem {
   }
 
   render(renderer) {
-    if (!this.game.player.alive || this.game.state === 'escaping') return;
+    if (!this.game.player.alive || this.game.player.vehicle || this.game.state === 'escaping') return;
     renderer.autoClear = false;
     renderer.clearDepth();
     renderer.render(this.vmScene, this.vmCamera);

@@ -81,6 +81,9 @@ export class Input {
       next: false, prev: false, slot: -1, detonate: false, pause: false,
       menuUp: false, menuDown: false, menuLeft: false, menuRight: false,
       confirm: false, back: false,
+      // Araç kontrolleri
+      mouseFire: false, secondary: false, jumpHeld: false, descendHeld: false,
+      rt: 0, lt: 0, rb: false, padActive: false,
     };
   }
 
@@ -100,6 +103,10 @@ export class Input {
     s.lookX = this.mouseDX * sens;
     s.lookY = this.mouseDY * sens * (settings.invertY ? -1 : 1);
     s.fire = this.mouseButtons.has(0);
+    s.mouseFire = s.fire;
+    s.secondary = this.mousePressed.has(2);
+    s.jumpHeld = k.has('Space');
+    s.descendHeld = k.has('KeyC') || k.has('ControlLeft') || k.has('ControlRight');
     s.firePressed = this.mousePressed.has(0);
     s.sprint = k.has('ShiftLeft') || k.has('ShiftRight');
     s.interact = k.has('KeyE');
@@ -135,6 +142,12 @@ export class Input {
       s.lookX += lookCurve(p.rx) * ps * dt;
       s.lookY += lookCurve(p.ry) * ps * dt * (settings.invertY ? -1 : 1);
       s.fire = s.fire || B[BTN.RT];
+      s.rt = p.rt > 0.08 ? p.rt : 0;
+      s.lt = p.lt > 0.08 ? p.lt : 0;
+      s.rb = B[BTN.RB];
+      s.secondary = s.secondary || this.padPressed(BTN.LB);
+      s.jumpHeld = s.jumpHeld || B[BTN.A];
+      s.padActive = this.lastDevice === 'pad';
       s.firePressed = s.firePressed || this.padPressed(BTN.RT);
       s.aim = B[BTN.LT];
       s.sprint = s.sprint || B[BTN.L3] || this.padSprint;

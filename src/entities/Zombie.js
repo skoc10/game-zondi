@@ -213,7 +213,7 @@ export class ZombieManager {
     if (!z.alive) return { killed: false };
     const hadHelmet = z.helmet > 0;
     const hadArmor = z.armor > 0;
-    const r = damageZombie(z, amount, part === 'head' ? 'head' : cause === 'explosion' ? 'blast' : 'body');
+    const r = damageZombie(z, amount, part === 'head' ? 'head' : cause === 'explosion' || cause === 'vehicle' ? 'blast' : 'body');
     z.health = r.health;
     z.armor = r.armor;
     z.helmet = r.helmet;
@@ -230,7 +230,7 @@ export class ZombieManager {
       fx.emit({ pos: z.chestPos, count: 10, colors: ['#4a5459', '#757575'], speed: 4, up: 2, life: 0.8, size: 0.12 });
       this.game.audio.play('clank', z.pos);
     }
-    if (dir && cause !== 'explosion') {
+    if (dir && cause !== 'explosion' && cause !== 'vehicle') {
       const k = cause === 'melee' ? 5 : 1.2;
       z.knock.x += dir.x * k / z.scale;
       z.knock.z += dir.z * k / z.scale;
@@ -341,22 +341,26 @@ export class ZombieManager {
           }
           this.updateShooting(z, dt, dist, los, player);
         }
-        if (t.exploder && dist < 2.0 && player.alive) {
+        const veh = player.vehicle;
+        // Araçtaysa uzaklık aracın gövdesine ölçülür
+        const contact = veh ? veh.surfaceDist(z.pos.x, z.pos.z) : dist;
+        if (t.exploder && contact < 2.0 && player.alive && Math.abs(ppos.y - z.pos.y) < 3) {
           z.fuse = 0.7;
           game.audio.play('fuse', z.pos);
         }
         // Yakın saldırı
         const reach = z.radius + 0.4 + 0.75 * Math.max(1, z.scale * 0.8);
         z.attackCd -= dt;
-        if (!t.exploder && dist < reach && Math.abs(ppos.y - z.pos.y) < 1.6 * z.scale && player.alive) {
+        const inReach = veh ? contact < z.radius + 0.7 : dist < reach;
+        const heightOk = Math.abs(ppos.y - z.pos.y) < (veh ? 2.6 : 1.6) * z.scale;
+        if (!t.exploder && inReach && heightOk && player.alive) {
           speed *= 0.2;
           // İnce duvarın arkasından vuramasın
-          if (z.attackCd <= 0 && this.collision.lineOfSight(z.pos.x, 1.2 * z.scale, z.pos.z, ppos.x, ppos.y + 1.2, ppos.z)) {
+          if (z.attackCd <= 0 && (veh || this.collision.lineOfSight(z.pos.x, 1.2 * z.scale, z.pos.z, ppos.x, ppos.y + 1.2, ppos.z))) {
             z.attackCd = t.attackRate;
             z.attackAnim = 1;
-            player.takeDamage(t.damage * (1 + night * 0.2), z.pos);
-            game.onPlayerHit(t.damage);
-            if (t.knockback) player.push(dx, dz, t.knockback);
+            game.hitPlayer(t.damage * (1 + night * 0.2), z.pos);
+            if (t.knockback && !veh) player.push(dx, dz, t.knockback);
           }
         }
       } else {
@@ -513,10 +517,7 @@ export class ZombieManager {
       game.particles.sparks(end, seg.clone().multiplyScalar(-1));
     }
     game.particles.tracer(muzzle, end, '#ff8a65');
-    if (hit) {
-      player.takeDamage(w.damage, z.pos);
-      game.onPlayerHit(w.damage);
-    }
+    if (hit) game.hitPlayer(w.damage, z.pos);
   }
 
   updateDead(z, dt) {

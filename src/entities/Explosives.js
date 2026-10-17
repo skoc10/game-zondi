@@ -133,17 +133,32 @@ export class Explosives {
     });
   }
 
-  fireRocket(origin, dir, owner = 'player') {
+  // opts: { speed, radius, damage } — tank topu bunlarla ateşlenir
+  fireRocket(origin, dir, owner = 'player', opts = {}) {
     const w = WEAPONS.rocket;
     const mesh = rocketProjectileModel();
+    if (opts.radius) mesh.scale.setScalar(1.6);
     mesh.position.copy(origin);
     mesh.lookAt(origin.clone().sub(dir));
     this.scene.add(mesh);
-    const speed = owner === 'enemy' ? 17 : w.speed;
+    const speed = opts.speed ?? (owner === 'enemy' ? 17 : w.speed);
     this.projectiles.push({
       kind: 'rocket', mesh, pos: origin.clone(), vel: dir.clone().multiplyScalar(speed),
-      impact: true, radius: owner === 'enemy' ? 4.5 : w.radius, damage: owner === 'enemy' ? 70 : w.damage,
+      impact: true, radius: opts.radius ?? (owner === 'enemy' ? 4.5 : w.radius),
+      damage: opts.damage ?? (owner === 'enemy' ? 70 : w.damage),
       gravity: false, life: 5, owner, fuse: 0,
+    });
+  }
+
+  // Uçak/helikopter bombası: aracın hızıyla düşer, çarpınca patlar
+  dropBomb(origin, vel, radius, damage) {
+    const mesh = grenadeModel();
+    mesh.scale.set(3, 4, 3);
+    mesh.position.copy(origin);
+    this.scene.add(mesh);
+    this.projectiles.push({
+      kind: 'bomb', mesh, pos: origin.clone(), vel: vel.clone(), impact: true,
+      radius, damage, gravity: true, life: 12, owner: 'player', fuse: 0,
     });
   }
 
@@ -267,7 +282,7 @@ export class Explosives {
         if (zh) boom = p.pos.clone().addScaledVector(dir, zh.t);
       }
       // Düşman roketi oyuncuya
-      if (!boom && p.owner === 'enemy' && p.pos.distanceTo(g.player.center) < 0.9) boom = p.pos.clone();
+      if (!boom && p.owner === 'enemy' && p.pos.distanceTo(g.player.center) < (g.player.vehicle ? 2.2 : 0.9)) boom = p.pos.clone();
       if (!boom && p.fuse > 0) {
         p.fuse -= dt;
         if (p.fuse <= 0) boom = p.pos.clone();

@@ -43,6 +43,7 @@ export class Player {
     this.alive = true;
     this.onGround = true;
     this.carryingGas = false;
+    this.vehicle = null;
     this.flashOn = true;
     this.bobPhase = 0;
     this.bob = 0;

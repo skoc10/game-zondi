@@ -146,6 +146,10 @@ export class Sound {
         this.tone(d, { type: 'sine', freq: 90, freqEnd: 25, dur: 0.9, vol: 1.2 });
         this.noiseBurst(d, { dur: 0.15, type: 'highpass', freq: 1500, vol: 0.4 });
         break;
+      case 'cannon':
+        this.noiseBurst(d, { dur: 1.0, freq: 900, freqEnd: 80, vol: 1.5 });
+        this.tone(d, { type: 'sine', freq: 70, freqEnd: 30, dur: 0.6, vol: 1.2 });
+        break;
       case 'swing':
         this.noiseBurst(d, { dur: 0.18, type: 'bandpass', freq: 600, freqEnd: 1800, q: 1.5, vol: 0.35, attack: 0.04 });
         break;
@@ -255,6 +259,81 @@ export class Sound {
       default:
         break;
     }
+  }
+
+  // Araç motoru: tür başına taban frekans; helikopter/uçakta pervane vuruşu
+  startEngine(kind) {
+    this.stopEngine();
+    if (!this.ready) {
+      this.pendingEngine = kind;
+      return;
+    }
+    const base = { motorcycle: 75, jeep: 48, pickup: 42, tank: 30, heli: 38, plane: 62 }[kind] || 45;
+    const ctx = this.ctx;
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.value = base;
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 420;
+    const g = ctx.createGain();
+    g.gain.value = 0;
+    osc.connect(f);
+    f.connect(g);
+    g.connect(this.sfx);
+    osc.start();
+    const nodes = { osc, f, g, base, kind };
+    if (kind === 'heli' || kind === 'plane') {
+      // Pervane: gürültü + genlik modülasyonu
+      const src = ctx.createBufferSource();
+      src.buffer = this.noise;
+      src.loop = true;
+      const nf = ctx.createBiquadFilter();
+      nf.type = 'lowpass';
+      nf.frequency.value = kind === 'heli' ? 500 : 900;
+      const am = ctx.createGain();
+      am.gain.value = 0.25;
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = kind === 'heli' ? 11 : 30;
+      const lg = ctx.createGain();
+      lg.gain.value = 0.25;
+      lfo.connect(lg);
+      lg.connect(am.gain);
+      src.connect(nf);
+      nf.connect(am);
+      am.connect(g);
+      src.start();
+      lfo.start();
+      nodes.src = src;
+      nodes.lfo = lfo;
+    }
+    this.engine = nodes;
+  }
+
+  setEngine(load, running = true) {
+    if (!this.engine && this.pendingEngine && this.ready) this.startEngine(this.pendingEngine);
+    const e = this.engine;
+    if (!e) return;
+    const t = this.ctx.currentTime;
+    e.osc.frequency.setTargetAtTime(e.base * (1 + load * 1.6), t, 0.08);
+    e.f.frequency.setTargetAtTime(380 + load * 900, t, 0.1);
+    e.g.gain.setTargetAtTime(running ? 0.18 + load * 0.22 : 0, t, 0.1);
+    if (e.lfo) e.lfo.frequency.setTargetAtTime((e.kind === 'heli' ? 9 : 20) + load * 14, t, 0.2);
+  }
+
+  stopEngine() {
+    this.pendingEngine = null;
+    const e = this.engine;
+    if (!e) return;
+    try {
+      e.osc.stop();
+      if (e.src) e.src.stop();
+      if (e.lfo) e.lfo.stop();
+    } catch {
+      // zaten durmuş
+    }
+    e.g.disconnect();
+    this.engine = null;
   }
 
   // Benzin dökme gurultusu (döngü)

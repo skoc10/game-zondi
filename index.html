@@ -43,6 +43,14 @@
       <div id="ammo">∞</div>
     </div>
     <div id="slots"></div>
+    <div id="vehicle-panel" class="panel hidden">
+      <div id="veh-name">Araç</div>
+      <div id="veh-speed">0 km/sa</div>
+      <div class="bar"><label>YAKIT</label><div class="track"><div id="veh-fuel" class="fill fuel"></div></div></div>
+      <div class="bar"><label>SAĞLAM</label><div class="track"><div id="veh-hp" class="fill vhp"></div></div></div>
+      <div id="veh-extra"></div>
+      <div id="veh-help"></div>
+    </div>
   </div>
 
   <!-- Menüler -->
@@ -100,6 +108,12 @@
           <tr><td>Eşya seç</td><td>1–8, tekerlek, Q</td><td>RB / LB</td></tr>
           <tr><td>C4 patlat</td><td>Sağ tık, G</td><td>D-pad ▲</td></tr>
           <tr><td>Duraklat</td><td>Esc, P</td><td>Start / Options</td></tr>
+          <tr><th colspan="3">Araçlar (binmek / inmek: E · X / □)</th></tr>
+          <tr><td>Kara aracı</td><td>W/S gaz-geri, A/D, Space el freni</td><td>RT gaz, LT fren, sol çubuk</td></tr>
+          <tr><td>Tank topu</td><td>Sol tık (fareyle nişan)</td><td>RB (sağ çubukla nişan)</td></tr>
+          <tr><td>Helikopter</td><td>W/S, A/D, Space yüksel, C alçal</td><td>Sol çubuk, RT yüksel, LT alçal</td></tr>
+          <tr><td>Heli. silahları</td><td>Sol tık makineli, sağ tık bomba</td><td>RB makineli, LB bomba</td></tr>
+          <tr><td>Uçak</td><td>W/S gaz, fare yönlendirir, sol tık bomba</td><td>RT/LT gaz, sol çubuk, RB bomba</td></tr>
         </table>
         <ul class="tips">
           <li>Silahlı zombileri öldür, düşen silahı ve mermiyi al.</li>
@@ -107,6 +121,8 @@
           <li>Kırmızı variller vurulunca patlar ve birbirini tetikler.</li>
           <li>Patlayan zombiyi kafasından vurursan yerinde patlar. Gövdesinden öldürürsen kafası düşer: al ve fırlat!</li>
           <li>Gece zombiler artar ve fenerin ışığına gelir.</li>
+          <li>Araçla zombileri ezebilirsin. Yakıt biterse benzinlik pompasında ya da askeri üsteki depoda dur, dolar.</li>
+          <li>Askeri üste tank, helikopter ve uçak var.</li>
         </ul>
       </div>
       <div class="menu-item btn" data-action="back">GERİ</div>
