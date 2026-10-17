@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { explosionDamage } from '../core/combat.js';
+import { coveredExplosionDamage } from '../core/combat.js';
 import { WEAPONS, THROWABLES } from '../weapons/weaponData.js';
 import { grenadeModel, zombieHeadModel, tntModel, c4Model, rocketProjectileModel } from '../world/models.js';
 import { clamp } from '../core/math.js';
@@ -40,27 +40,40 @@ export class Explosives {
   explode(pos, radius, damage, opts = {}) {
     const g = this.game;
     const p = pos.clone();
+    const col = g.collision;
+    // Duvar arkasındaki hedef korunur
+    const occluded = (t) => !col.lineOfSight(p.x, p.y + 0.5, p.z, t.x, t.y, t.z);
     // Zombiler
     for (const z of g.zombies.list) {
       if (!z.alive) continue;
-      const d = Math.max(0, z.chestPos.distanceTo(p) - z.radius);
-      const dmg = explosionDamage(d, radius, damage);
+      const chest = z.chestPos;
+      const d = Math.max(0, chest.distanceTo(p) - z.radius);
+      if (d >= radius) continue;
+      const hidden = occluded(chest);
+      const dmg = coveredExplosionDamage(d, radius, damage, hidden);
       if (dmg <= 0) continue;
-      tmpDir.subVectors(z.pos, p).setY(0).normalize();
-      z.knock.addScaledVector(tmpDir, (12 * (1 - d / radius)) / z.scale);
+      if (!hidden) {
+        tmpDir.subVectors(z.pos, p).setY(0).normalize();
+        z.knock.addScaledVector(tmpDir, (12 * (1 - d / radius)) / z.scale);
+      }
       g.zombies.damage(z, dmg, 'body', 'explosion');
     }
     // Oyuncu (biraz affedici)
     const pl = g.player;
-    if (pl.alive) {
-      const d = pl.center.distanceTo(p);
-      const dmg = explosionDamage(d, radius, damage) * 0.5;
-      if (dmg > 0) {
-        pl.takeDamage(dmg, p);
-        pl.push(pl.pos.x - p.x, pl.pos.z - p.z, 10 * (1 - d / radius));
-        g.onPlayerHit(dmg);
+    if (pl.alive && !pl.vehicle) {
+      const c = pl.center;
+      const d = c.distanceTo(p);
+      if (d < radius) {
+        const hidden = occluded(c);
+        const dmg = coveredExplosionDamage(d, radius, damage, hidden) * 0.5;
+        if (dmg > 0) {
+          pl.takeDamage(dmg, p);
+          if (!hidden) pl.push(pl.pos.x - p.x, pl.pos.z - p.z, 10 * (1 - d / radius));
+          g.onPlayerHit(dmg);
+        }
       }
     }
+    if (g.vehicles) g.vehicles.onExplosion(p, radius, damage, occluded);
     // Zincirleme: variller, TNT, C4, sandıklar
     for (const b of g.world.barrels) {
       if (!b.alive || b.fuse >= 0) continue;

@@ -41,3 +41,10 @@ export function damageZombie(state, amount, part) {
   health = Math.max(0, health - amount);
   return { health, armor, helmet, headshot };
 }
+
+// Duvar arkasındaki hedef patlamadan çok az etkilenir.
+export const COVER_MULT = 0.2;
+
+export function coveredExplosionDamage(dist, radius, damage, occluded) {
+  return explosionDamage(dist, radius, damage) * (occluded ? COVER_MULT : 1);
+}

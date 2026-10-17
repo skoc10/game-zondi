@@ -1,5 +1,6 @@
 import { pickWeighted, rand, chance } from '../core/math.js';
 import { MAP_HALF, CAR_POS } from '../world/World.js';
+import { BASE, VILLAGE, BARRICADE_Z } from '../world/regions.js';
 
 // Zombi doğurucu: zamanla zorlaşır, gece iki kat hızlı.
 export class Spawner {
@@ -15,14 +16,20 @@ export class Spawner {
     this.firstGunner = false;
   }
 
-  typeWeights(night) {
+  typeWeights(night, nearBase = false) {
     const e = this.elapsed;
     const w = [['normal', 10], ['small', e > 20 ? 4 : 1]];
+    // Askeri üs çevresinde asker ve zırhlı zombiler çoğalır
+    if (nearBase) w.push(['soldier', 7], ['armored', 3]);
     if (e > 25) w.push(['gunner', 3]);
     if (e > 50) w.push(['exploder', 2.5]);
     if (e > 80) w.push(['armored', 2 + night * 2]);
     if (e > 100) w.push(['big', 1 + night * 2.5]);
     return w;
+  }
+
+  soldierWeapon() {
+    return pickWeighted([['smg', 55], ['shotgun', 30], ['rocket', this.elapsed > 90 ? 15 : 3]]);
   }
 
   gunnerWeapon() {
@@ -51,9 +58,11 @@ export class Spawner {
   spawnOne(player, night, typeKey = null) {
     const spot = this.findSpot(player);
     if (!spot) return null;
-    let type = typeKey || pickWeighted(this.typeWeights(night));
+    const nearBase = Math.hypot(player.pos.x - BASE.x, player.pos.z - BASE.z) < BASE.half + 60;
+    const type = typeKey || pickWeighted(this.typeWeights(night, nearBase));
     const opts = { alerted: night > 0.5 ? chance(0.7) : chance(0.15) };
     if (type === 'gunner') opts.weapon = this.gunnerWeapon();
+    if (type === 'soldier') opts.weapon = this.soldierWeapon();
     if (type === 'small' && chance(0.5)) {
       // Küçükler sürü halinde
       for (let i = 0; i < 2; i++) this.zombies.spawn('small', spot.x + rand(-2, 2), spot.z + rand(-2, 2), opts);
@@ -75,8 +84,22 @@ export class Spawner {
       [-22, 70, 'normal'], [5, -80, 'normal'], [-80, 10, 'normal'], [80, 60, 'normal'],
       [40, -90, 'exploder'], [-70, -40, 'normal'], [20, 80, 'normal'],
     ];
+    // Köy, barikat ve askeri üs
+    const bx = BASE.x;
+    const bz = BASE.z;
+    spots.push(
+      [VILLAGE.x + 20, VILLAGE.z, 'normal'], [VILLAGE.x - 5, VILLAGE.z + 6, 'normal'], [VILLAGE.x - 25, VILLAGE.z - 4, 'gunner'],
+      [VILLAGE.x + 8, VILLAGE.z - 10, 'small'], [VILLAGE.x - 30, VILLAGE.z + 10, 'exploder'], [VILLAGE.x - 15, VILLAGE.z - 30, 'normal'],
+      [4, BARRICADE_Z - 6, 'normal'], [-6, BARRICADE_Z + 10, 'soldier'], [10, BARRICADE_Z + 12, 'normal'],
+      [bx - 30, bz, 'soldier'], [bx, bz - 20, 'soldier'], [bx + 20, bz + 10, 'soldier'], [bx + 10, bz + 30, 'armored'],
+      [bx - 20, bz + 30, 'normal'], [bx + 30, bz - 30, 'soldier'], [bx - 35, bz - 35, 'armored'], [bx + 5, bz + 5, 'big'],
+      [120, -80, 'normal'], [170, -80, 'normal'], [-60, 150, 'normal'], [-120, -120, 'normal'], [150, 100, 'normal'],
+    );
     for (const [x, zz, type] of spots) {
-      z.spawn(type, x, zz, type === 'gunner' ? { weapon: chance(0.6) ? 'pistol' : 'shotgun' } : {});
+      const opts = {};
+      if (type === 'gunner') opts.weapon = chance(0.6) ? 'pistol' : 'shotgun';
+      if (type === 'soldier') opts.weapon = chance(0.6) ? 'smg' : 'shotgun';
+      z.spawn(type, x, zz, opts);
     }
   }
 

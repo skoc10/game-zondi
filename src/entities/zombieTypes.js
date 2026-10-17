@@ -20,6 +20,10 @@ export const ZOMBIE_TYPES = {
     name: 'Zırhlı', hp: 80, armor: 70, helmet: 45, speed: 2.5, scale: 1.05, damage: 12, attackRate: 1.0,
     skin: '#689f38', cloth: '#2e4d14', pants: '#1f3a0d', pitch: 0.8,
   },
+  soldier: {
+    name: 'Asker', hp: 90, armor: 50, helmet: 40, speed: 2.7, scale: 1.05, damage: 12, attackRate: 1.0, ranged: true,
+    skin: '#7cb342', cloth: '#5b6b3a', pants: '#4a5530', pitch: 0.85, gear: '#3f4a22',
+  },
   exploder: {
     name: 'Patlayan', hp: 40, speed: 3.2, scale: 1.0, damage: 0, attackRate: 1.0, exploder: true,
     skin: '#aed581', cloth: '#689f38', pants: '#33691e', pitch: 1.3,

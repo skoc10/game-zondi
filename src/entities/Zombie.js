@@ -98,10 +98,10 @@ export class Zombie {
     }
     // Zırh parçaları
     if (this.helmet > 0) {
-      this.helmetMesh = part(this.head, hw + 0.08, 0.22, hw + 0.08, 0, hh - 0.04, 0, '#5f6b6d');
+      this.helmetMesh = part(this.head, hw + 0.08, 0.22, hw + 0.08, 0, hh - 0.04, 0, t.gear || '#5f6b6d');
     }
     if (this.armor > 0) {
-      this.vestMesh = part(inner, bodyW + 0.08, 0.6, 0.46, 0, 1.22, 0, '#4a5459');
+      this.vestMesh = part(inner, bodyW + 0.08, 0.6, 0.46, 0, 1.22, 0, t.gear || '#4a5459');
     }
     // Silah elde
     if (this.weapon) {
@@ -163,6 +163,7 @@ export class ZombieManager {
 
   spawn(typeKey, x, z, opts = {}) {
     if (typeKey === 'gunner' && !opts.weapon) opts.weapon = 'pistol';
+    if (typeKey === 'soldier' && !opts.weapon) opts.weapon = 'smg';
     const zb = new Zombie(typeKey, x, z, opts);
     this.scene.add(zb.mesh);
     this.list.push(zb);
@@ -349,7 +350,8 @@ export class ZombieManager {
         z.attackCd -= dt;
         if (!t.exploder && dist < reach && Math.abs(ppos.y - z.pos.y) < 1.6 * z.scale && player.alive) {
           speed *= 0.2;
-          if (z.attackCd <= 0) {
+          // İnce duvarın arkasından vuramasın
+          if (z.attackCd <= 0 && this.collision.lineOfSight(z.pos.x, 1.2 * z.scale, z.pos.z, ppos.x, ppos.y + 1.2, ppos.z)) {
             z.attackCd = t.attackRate;
             z.attackAnim = 1;
             player.takeDamage(t.damage * (1 + night * 0.2), z.pos);
@@ -460,6 +462,11 @@ export class ZombieManager {
     const w = GUNNER_WEAPONS[z.weapon];
     z.shootCd -= dt;
     if (z.burstLeft > 0) {
+      // Oyuncu siper aldıysa seri kesilir
+      if (!los) {
+        z.burstLeft = 0;
+        return;
+      }
       z.burstCd -= dt;
       if (z.burstCd <= 0) {
         z.burstLeft--;
@@ -492,9 +499,19 @@ export class ZombieManager {
     game.particles.emit({ pos: muzzle, count: 4, colors: ['#ffeb3b', '#ff9800'], speed: 2, life: 0.08, size: 0.08, glow: true, gravity: 0 });
     // İsabet şansı: mesafe ve oyuncunun hızı düşürür
     const hitChance = clamp(w.accuracy * (1 - dist / (w.range * 1.6)) - player.speed * 0.035, 0.08, 0.9);
-    const hit = Math.random() < hitChance;
+    let hit = Math.random() < hitChance;
     const end = target.clone();
     if (!hit) end.add(new THREE.Vector3(rand(-1.2, 1.2), rand(-0.5, 1), rand(-1.2, 1.2)));
+    // Mermi yolundaki duvar mermiyi durdurur
+    const seg = end.clone().sub(muzzle);
+    const len = seg.length();
+    seg.divideScalar(len);
+    const wall = this.collision.raycast(muzzle.x, muzzle.y, muzzle.z, seg.x, seg.y, seg.z, len);
+    if (wall) {
+      hit = false;
+      end.copy(muzzle).addScaledVector(seg, wall.t);
+      game.particles.sparks(end, seg.clone().multiplyScalar(-1));
+    }
     game.particles.tracer(muzzle, end, '#ff8a65');
     if (hit) {
       player.takeDamage(w.damage, z.pos);

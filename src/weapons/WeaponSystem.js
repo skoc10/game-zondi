@@ -312,7 +312,7 @@ export class WeaponSystem {
         tmpV.y = 0;
         tmpV.normalize();
         const f2 = new THREE.Vector3(fwd.x, 0, fwd.z).normalize();
-        if (tmpV.dot(f2) > 0.6) {
+        if (tmpV.dot(f2) > 0.6 && g.collision.lineOfSight(eye.x, eye.y - 0.3, eye.z, z.pos.x, 1.2 * z.scale, z.pos.z)) {
           bd = d;
           best = z;
         }

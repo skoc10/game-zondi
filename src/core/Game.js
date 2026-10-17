@@ -208,6 +208,7 @@ export class Game {
       this.hud.toast('Patlayan kafa düştü — al ve fırlat!');
     }
     if (z.typeKey === 'armored' && chance(0.45)) this.pickups.spawn('armor', x + off(), zz + off());
+    if (z.typeKey === 'soldier' && chance(0.3)) this.pickups.spawn('armor', x + off(), zz + off());
     if (z.typeKey === 'big') {
       this.pickups.spawn('ammo', x + off(), zz + off());
       this.pickups.spawn(pickWeighted([['grenade', 3], ['tnt', 2], ['medkit', 2], ['c4', 1]]), x + off(), zz + off());
@@ -224,10 +225,17 @@ export class Game {
     this.world.removeCrate(c);
     this.audio.play('wood', c.pos);
     this.particles.emit({ pos: c.pos.clone().setY(0.6), count: 18, colors: ['#8d6e3f', '#5d4325', '#a1887f'], speed: 5, up: 3, life: 1.1, size: 0.16, gravity: 14 });
-    const loot = c.loot || pickWeighted([
-      ['ammo', 30], ['grenade', 20], ['tnt', 12], ['c4', 10], ['armor', 12], ['medkit', 14],
-    ]);
-    this.pickups.spawn(loot, c.pos.x, c.pos.z);
+    const table = c.military
+      ? [['weapon:rocket', 10], ['weapon:smg', 12], ['weapon:shotgun', 8], ['c4', 18], ['tnt', 14], ['armor', 18], ['ammo', 20], ['grenade', 14]]
+      : [['ammo', 30], ['grenade', 20], ['tnt', 12], ['c4', 10], ['armor', 12], ['medkit', 14]];
+    const loot = c.loot || pickWeighted(table);
+    if (loot.startsWith('weapon:')) {
+      const weapon = loot.slice(7);
+      const [a, b] = DROP_AMMO[weapon];
+      this.pickups.spawn('weapon', c.pos.x, c.pos.z, { weapon, ammo: randInt(a, b) * 2 });
+    } else {
+      this.pickups.spawn(loot, c.pos.x, c.pos.z);
+    }
     if (chance(0.3)) this.pickups.spawn('ammo', c.pos.x + 0.7, c.pos.z + 0.3);
   }
 

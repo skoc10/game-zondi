@@ -41,32 +41,84 @@ export function pointInBox(x, y, z, b, pad = 0) {
   );
 }
 
+const CELL = 16;
+const OFF = 4096;
+const cellKey = (ix, iz) => (ix + OFF) * 8192 + (iz + OFF);
+
+// Kutular 16 m'lik hücrelere dağıtılır; sorgular sadece yakın hücrelere bakar.
 export class CollisionWorld {
   constructor() {
     this.boxes = [];
+    this.grid = new Map();
+    this.stamp = 0;
   }
 
   add(box) {
     this.boxes.push(box);
+    box._cells = [];
+    box._stamp = 0;
+    const x0 = Math.floor(box.minX / CELL);
+    const x1 = Math.floor(box.maxX / CELL);
+    const z0 = Math.floor(box.minZ / CELL);
+    const z1 = Math.floor(box.maxZ / CELL);
+    for (let ix = x0; ix <= x1; ix++) {
+      for (let iz = z0; iz <= z1; iz++) {
+        const k = cellKey(ix, iz);
+        let list = this.grid.get(k);
+        if (!list) {
+          list = [];
+          this.grid.set(k, list);
+        }
+        list.push(box);
+        box._cells.push(list);
+      }
+    }
     return box;
   }
 
   remove(box) {
     const i = this.boxes.indexOf(box);
-    if (i >= 0) this.boxes.splice(i, 1);
+    if (i < 0) return;
+    this.boxes.splice(i, 1);
+    for (const list of box._cells) {
+      const j = list.indexOf(box);
+      if (j >= 0) list.splice(j, 1);
+    }
+    box._cells = [];
+  }
+
+  // Dikdörtgen alana dokunan kutuları birer kez ziyaret eder
+  query(minX, minZ, maxX, maxZ, fn) {
+    const st = ++this.stamp;
+    const x0 = Math.floor(minX / CELL);
+    const x1 = Math.floor(maxX / CELL);
+    const z0 = Math.floor(minZ / CELL);
+    const z1 = Math.floor(maxZ / CELL);
+    for (let ix = x0; ix <= x1; ix++) {
+      for (let iz = z0; iz <= z1; iz++) {
+        const list = this.grid.get(cellKey(ix, iz));
+        if (!list) continue;
+        for (let n = 0; n < list.length; n++) {
+          const b = list[n];
+          if (b._stamp === st) continue;
+          b._stamp = st;
+          fn(b);
+        }
+      }
+    }
   }
 
   // Dikey silindiri (ayak y, yükseklik h, yarıçap r) kutulardan dışarı iter. pos değiştirilir.
   resolveCircle(pos, radius, height) {
     let hit = false;
-    for (const b of this.boxes) {
-      if (pos.y >= b.maxY - 0.01 || pos.y + height <= b.minY) continue;
+    this.query(pos.x - radius, pos.z - radius, pos.x + radius, pos.z + radius, (b) => {
+      if (pos.y >= b.maxY - 0.01 || pos.y + height <= b.minY) return;
       const cx = Math.max(b.minX, Math.min(pos.x, b.maxX));
       const cz = Math.max(b.minZ, Math.min(pos.z, b.maxZ));
       const dx = pos.x - cx;
       const dz = pos.z - cz;
       const d2 = dx * dx + dz * dz;
-      if (d2 >= radius * radius) continue;
+      if (d2 >= radius * radius) return;
       hit = true;
       if (d2 > 1e-8) {
         const d = Math.sqrt(d2);
@@ -85,49 +137,78 @@ export class CollisionWorld {
         else if (m === pb) pos.z -= pb;
         else pos.z += pf;
       }
-    }
+    });
     return hit;
   }
 
   // Ayak seviyesinin hemen altındaki/üstündeki (adım yüksekliği kadar) en yüksek zemin
   groundHeight(x, z, radius, feetY, step = 0.45) {
     let h = 0;
-    for (const b of this.boxes) {
-      if (b.maxY > feetY + step || b.maxY <= h) continue;
+    this.query(x - radius, z - radius, x + radius, z + radius, (b) => {
+      if (b.maxY > feetY + step || b.maxY <= h) return;
       const cx = Math.max(b.minX, Math.min(x, b.maxX));
       const cz = Math.max(b.minZ, Math.min(z, b.maxZ));
       const dx = x - cx;
       const dz = z - cz;
       if (dx * dx + dz * dz < radius * radius * 0.5) h = b.maxY;
-    }
+    });
     return h;
   }
 
   // Başın üstündeki tavan (zıplarken kafa çarpması)
   ceilingHeight(x, z, radius, headY) {
     let c = Infinity;
-    for (const b of this.boxes) {
-      if (b.minY < headY - 0.3 || b.minY >= c) continue;
+    this.query(x - radius, z - radius, x + radius, z + radius, (b) => {
+      if (b.minY < headY - 0.3 || b.minY >= c) return;
       const cx = Math.max(b.minX, Math.min(x, b.maxX));
       const cz = Math.max(b.minZ, Math.min(z, b.maxZ));
       const dx = x - cx;
       const dz = z - cz;
       if (dx * dx + dz * dz < radius * radius * 0.5) c = b.minY;
-    }
+    });
     return c;
   }
 
-  // En yakın kutu isabeti: { t, box } ya da null
+  // En yakın kutu isabeti: { t, box, ground } ya da null. Hücreler ışın boyunca (DDA) taranır.
   raycast(ox, oy, oz, dx, dy, dz, maxT = 200, filter = null) {
     let best = maxT;
     let bestBox = null;
-    for (const b of this.boxes) {
-      if (filter && !filter(b)) continue;
-      const t = rayAABB(ox, oy, oz, dx, dy, dz, b, best);
-      if (t < best) {
-        best = t;
-        bestBox = b;
+    const st = ++this.stamp;
+    const test = (list) => {
+      for (let n = 0; n < list.length; n++) {
+        const b = list[n];
+        if (b._stamp === st) continue;
+        b._stamp = st;
+        if (filter && !filter(b)) continue;
+        const t = rayAABB(ox, oy, oz, dx, dy, dz, b, best);
+        if (t < best) {
+          best = t;
+          bestBox = b;
+        }
       }
+    };
+    let ix = Math.floor(ox / CELL);
+    let iz = Math.floor(oz / CELL);
+    const stepX = dx > 0 ? 1 : -1;
+    const stepZ = dz > 0 ? 1 : -1;
+    const tDX = Math.abs(dx) > 1e-9 ? CELL / Math.abs(dx) : Infinity;
+    const tDZ = Math.abs(dz) > 1e-9 ? CELL / Math.abs(dz) : Infinity;
+    let tMX = Math.abs(dx) > 1e-9 ? ((dx > 0 ? (ix + 1) * CELL - ox : ox - ix * CELL) / Math.abs(dx)) : Infinity;
+    let tMZ = Math.abs(dz) > 1e-9 ? ((dz > 0 ? (iz + 1) * CELL - oz : oz - iz * CELL) / Math.abs(dz)) : Infinity;
+    let tCell = 0;
+    for (let guard = 0; guard < 512 && tCell <= best; guard++) {
+      const list = this.grid.get(cellKey(ix, iz));
+      if (list) test(list);
+      if (tMX < tMZ) {
+        tCell = tMX;
+        tMX += tDX;
+        ix += stepX;
+      } else {
+        tCell = tMZ;
+        tMZ += tDZ;
+        iz += stepZ;
+      }
+      if (tCell === Infinity) break;
     }
     // Zemin düzlemi
     if (dy < -1e-6) {
@@ -149,10 +230,11 @@ export class CollisionWorld {
   }
 
   blockedAt(x, z, radius, height = 1.8) {
-    for (const b of this.boxes) {
-      if (b.minY > height || b.maxY < 0.05) continue;
-      if (x + radius > b.minX && x - radius < b.maxX && z + radius > b.minZ && z - radius < b.maxZ) return true;
-    }
-    return false;
+    let blocked = false;
+    this.query(x - radius, z - radius, x + radius, z + radius, (b) => {
+      if (blocked || b.minY > height || b.maxY < 0.05) return;
+      if (x + radius > b.minX && x - radius < b.maxX && z + radius > b.minZ && z - radius < b.maxZ) blocked = true;
+    });
+    return blocked;
   }
 }

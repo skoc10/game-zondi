@@ -1,4 +1,5 @@
-const KEY = 'benzin-bitmeden-ayarlar';
+const KEY = 'zondi-ayarlar';
+const OLD_KEY = 'benzin-bitmeden-ayarlar';
 
 const DEFAULTS = {
   mouseSens: 1,
@@ -12,7 +13,7 @@ const DEFAULTS = {
 
 function load() {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY);
     if (raw) return { ...DEFAULTS, ...JSON.parse(raw) };
   } catch {
     // Gizli pencere vb. — varsayılanlarla devam
