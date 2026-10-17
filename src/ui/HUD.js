@@ -1,6 +1,7 @@
 import { WEAPONS, SLOTS, THROWABLES } from '../weapons/weaponData.js';
 import { glyph } from '../core/Gamepad.js';
 import { angleDiff, formatTime } from '../core/math.js';
+import { GAS_REQUIRED } from '../world/World.js';
 
 const SLOT_LABELS = ['Levye', 'Tabanca', 'Pompalı', 'Makineli', 'Roket', 'Bomba', 'TNT', 'C4'];
 const $ = (id) => document.getElementById(id);
@@ -164,10 +165,10 @@ export class HUD {
       this.set('cf', this.el.childFill.style, 'width', `${Math.max(0, c.frac) * 100}%`);
     } else {
       const delivered = g.gasDelivered;
-      if (delivered >= 5) obj = 'Depo dolu! Arabaya bin ve KAÇ!';
+      if (delivered >= GAS_REQUIRED) obj = 'Depo dolu! Arabaya bin ve KAÇ!';
       else if (p.carryingGas) obj = 'Benzini arabaya götür';
       else obj = 'Benzin bidonlarını bul (pusulada kırmızı)';
-      this.set('gas', this.el.gas, 'textContent', `${delivered} / 5`);
+      this.set('gas', this.el.gas, 'textContent', `${delivered} / ${GAS_REQUIRED}`);
     }
     this.set('obj', this.el.objective, 'textContent', obj);
     this.set('gasrow', this.el.gasRow.style, 'display', m ? 'none' : '');

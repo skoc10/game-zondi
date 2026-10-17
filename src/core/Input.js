@@ -25,7 +25,7 @@ export class Input {
     this.state = this.emptyState();
 
     window.addEventListener('keydown', (e) => {
-      if (['Space', 'Tab', 'ArrowUp', 'ArrowDown'].includes(e.code)) e.preventDefault();
+      if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'AltLeft'].includes(e.code)) e.preventDefault();
       if (!this.keys.has(e.code)) this.keysPressed.add(e.code);
       this.keys.add(e.code);
       this.lastDevice = 'kbm';
@@ -37,11 +37,16 @@ export class Input {
     });
     window.addEventListener('mousedown', (e) => {
       if (!this.locked) return;
+      // Fare yan tuşları tarayıcıda "geri" yapmasın
+      if (e.button > 2) e.preventDefault();
       this.mouseButtons.add(e.button);
       this.mousePressed.add(e.button);
       this.lastDevice = 'kbm';
     });
-    window.addEventListener('mouseup', (e) => this.mouseButtons.delete(e.button));
+    window.addEventListener('mouseup', (e) => {
+      if (e.button > 2) e.preventDefault();
+      this.mouseButtons.delete(e.button);
+    });
     window.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('mousemove', (e) => {
       if (!this.locked) return;
@@ -100,10 +105,15 @@ export class Input {
     s.moveX = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0);
     s.moveY = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0);
     // Sağ tık basılıyken nişan: hassasiyet düşer
-    // Aç/kapa ayarında sağ tık her basışta nişanı değiştirir (touchpad için)
-    if (settings.aimToggle && this.mousePressed.has(2)) this.aimToggled = !this.aimToggled;
+    // Nişan tuşu ayarlanabilir (sağ tık, Z, V, X, Alt, fare yan tuşu)
+    const key = settings.aimKey || 'mouse2';
+    const mouseBtn = key === 'mouse2' ? 2 : key === 'mouse3' ? 3 : -1;
+    const aimDown = mouseBtn >= 0 ? this.mouseButtons.has(mouseBtn) : k.has(key);
+    const aimPress = mouseBtn >= 0 ? this.mousePressed.has(mouseBtn) : kp.has(key);
+    // Aç/kapa ayarında her basış nişanı değiştirir (touchpad için)
+    if (settings.aimToggle && aimPress) this.aimToggled = !this.aimToggled;
     if (!this.locked) this.aimToggled = false;
-    const aimHeld = settings.aimToggle ? !!this.aimToggled : this.mouseButtons.has(2);
+    const aimHeld = settings.aimToggle ? !!this.aimToggled : aimDown;
     const sens = MOUSE_RAD_PER_PX * settings.mouseSens * (aimHeld ? 0.5 : 1);
     s.aim = aimHeld;
     s.lookX = this.mouseDX * sens;

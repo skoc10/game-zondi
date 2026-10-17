@@ -65,6 +65,7 @@
       <div class="menu-item btn primary" data-action="play">OYNA (1. BÖLÜM)</div>
       <div class="menu-item btn" data-action="controls">KONTROLLER</div>
       <div class="menu-item btn" data-action="settings">AYARLAR</div>
+      <p class="version">Sürüm 0.6 · 2. bölüm · nişan tuşu ayarı</p>
       <p class="pad-status" id="pad-status">Oyun kolu: bağlı değil (bağlamak için koldaki bir tuşa bas)</p>
     </div>
   </div>
@@ -85,7 +86,8 @@
       <h2>AYARLAR</h2>
       <label class="menu-item range">Fare hassasiyeti <input type="range" min="0.2" max="3" step="0.1" data-key="mouseSens" /></label>
       <label class="menu-item range">Kol bakış hassasiyeti <input type="range" min="0.3" max="2.5" step="0.1" data-key="padSens" /></label>
-      <div class="menu-item toggle" data-key="aimToggle">Nişan: sağ tıkla aç/kapa (touchpad) <span class="val"></span></div>
+      <div class="menu-item choice" data-key="aimKey">Nişan tuşu (tıkla: değiştir) <span class="val"></span></div>
+      <div class="menu-item toggle" data-key="aimToggle">Nişan: bas-aç / bas-kapa (touchpad için) <span class="val"></span></div>
       <div class="menu-item toggle" data-key="invertY">Y eksenini ters çevir <span class="val"></span></div>
       <div class="menu-item toggle" data-key="vibration">Kol titreşimi <span class="val"></span></div>
       <div class="menu-item toggle" data-key="aimAssist">Kol nişan yardımı <span class="val"></span></div>
@@ -106,7 +108,7 @@
           <tr><td>Koşu</td><td>Shift</td><td>L3 (sol çubuğa bas)</td></tr>
           <tr><td>Zıplama</td><td>Space</td><td>A / ✕</td></tr>
           <tr><td>Ateş / Kullan</td><td>Sol tık</td><td>RT / R2</td></tr>
-          <tr><td>Nişan (yakınlaştır)</td><td>Sağ tık (basılı tut)</td><td>LT / L2</td></tr>
+          <tr><td>Nişan (yakınlaştır)</td><td><span class="aim-key-label">Sağ tık</span> (basılı tut · Ayarlar'dan değişir)</td><td>LT / L2</td></tr>
           <tr><td>Al / Etkileşim</td><td>E</td><td>X / □</td></tr>
           <tr><td>Şarjör</td><td>R</td><td>B / ○</td></tr>
           <tr><td>Fener</td><td>F</td><td>Y / △</td></tr>

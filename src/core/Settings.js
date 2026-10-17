@@ -8,6 +8,7 @@ const DEFAULTS = {
   vibration: true,
   aimAssist: true,
   aimToggle: false,
+  aimKey: 'mouse2',
   volume: 0.8,
   music: 0.5,
 };
@@ -23,6 +24,21 @@ function load() {
 }
 
 export const settings = load();
+
+// Nişan için seçilebilen tuşlar
+export const AIM_KEYS = [
+  ['mouse2', 'Sağ tık'],
+  ['KeyZ', 'Z'],
+  ['KeyV', 'V'],
+  ['KeyX', 'X'],
+  ['AltLeft', 'Sol Alt / Option'],
+  ['mouse3', 'Fare yan tuşu'],
+];
+
+export function aimKeyLabel() {
+  const k = AIM_KEYS.find(([v]) => v === settings.aimKey);
+  return k ? k[1] : 'Sağ tık';
+}
 
 export function saveSettings() {
   try {

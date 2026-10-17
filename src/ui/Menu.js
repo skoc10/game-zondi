@@ -1,4 +1,4 @@
-import { settings, saveSettings } from '../core/Settings.js';
+import { settings, saveSettings, AIM_KEYS, aimKeyLabel } from '../core/Settings.js';
 
 // Fare, klavye ve oyun koluyla gezilebilen menüler.
 // Her ekran .menu-item öğeleri içerir: button | range (data-key) | toggle (data-key)
@@ -13,7 +13,8 @@ export class Menu {
     this.previous = null;
 
     document.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-action]');
+      // Düğmeler, aç/kapa ve seçmeli ayarlar fareyle tıklanabilir
+      const btn = e.target.closest('[data-action], .toggle[data-key], .choice[data-key]');
       if (btn) this.activate(btn);
     });
     for (const el of document.querySelectorAll('input[type=range][data-key]')) {
@@ -23,6 +24,7 @@ export class Menu {
     for (const el of document.querySelectorAll('.toggle[data-key]')) {
       this.renderToggle(el);
     }
+    this.renderChoices();
     for (const el of document.querySelectorAll('.menu-item')) {
       el.addEventListener('mouseenter', () => {
         const items = this.items();
@@ -63,6 +65,22 @@ export class Menu {
     this.game.audio.applySettings();
   }
 
+  // Seçmeli ayar (nişan tuşu): tıklama ya da sağ/sol ile sıradaki seçenek
+  renderChoices() {
+    for (const el of document.querySelectorAll('.choice[data-key="aimKey"]')) {
+      el.querySelector('.val').textContent = aimKeyLabel();
+    }
+    for (const el of document.querySelectorAll('.aim-key-label')) el.textContent = aimKeyLabel();
+  }
+
+  cycleChoice(el, dir) {
+    const i = AIM_KEYS.findIndex(([v]) => v === settings[el.dataset.key]);
+    const next = AIM_KEYS[(i + dir + AIM_KEYS.length) % AIM_KEYS.length];
+    settings[el.dataset.key] = next[0];
+    saveSettings();
+    this.renderChoices();
+  }
+
   renderToggle(el) {
     const on = !!settings[el.dataset.key];
     el.classList.toggle('on', on);
@@ -71,6 +89,10 @@ export class Menu {
 
   activate(el) {
     this.game.audio.resume();
+    if (el.classList.contains('choice')) {
+      this.cycleChoice(el, 1);
+      return;
+    }
     if (el.classList.contains('toggle')) {
       settings[el.dataset.key] = !settings[el.dataset.key];
       saveSettings();
@@ -82,6 +104,10 @@ export class Menu {
   }
 
   adjust(el, dir) {
+    if (el.classList.contains('choice')) {
+      this.cycleChoice(el, dir);
+      return;
+    }
     if (el.classList.contains('toggle')) {
       this.activate(el);
       return;

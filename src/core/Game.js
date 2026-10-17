@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Input } from './Input.js';
 import { CollisionWorld } from './Collision.js';
-import { World, GAS_SPOTS, CAR_POS } from '../world/World.js';
+import { World, GAS_SPOTS, CAR_POS, GAS_REQUIRED } from '../world/World.js';
 import { DayNight, NIGHT_START } from '../world/DayNight.js';
 import { BOX_GEO } from '../world/materials.js';
 import { Particles } from '../fx/Particles.js';
@@ -391,11 +391,11 @@ export class Game {
           this.audio.setPouring(false);
           this.audio.play('gas');
           this.input.rumble(0.4, 0.6, 200);
-          if (this.gasDelivered >= 5) {
+          if (this.gasDelivered >= GAS_REQUIRED) {
             this.hud.banner('DEPO DOLU! ARABAYA BİN!', 4);
             this.zombies.alert(car, 70);
           } else {
-            this.hud.toast(`Benzin döküldü: ${this.gasDelivered} / 5`);
+            this.hud.toast(`Benzin döküldü: ${this.gasDelivered} / ${GAS_REQUIRED}`);
           }
         }
       } else {
@@ -407,7 +407,7 @@ export class Game {
     }
     this.audio.setPouring(false);
     this.pour = 0;
-    if (nearCar && this.gasDelivered >= 5) {
+    if (nearCar && this.gasDelivered >= GAS_REQUIRED) {
       this.prompt = { text: 'Arabaya bin ve KAÇ!' };
       if (s.interactPressed) this.startEscape();
       return;
@@ -466,7 +466,7 @@ export class Game {
     let sub;
     if (this.level === 1) {
       title = win ? 'KAÇTIN!' : 'ÖLDÜN';
-      sub = win ? 'Depo doldu, motor çalıştı, zombiler arkada kaldı.' : `Benzin: ${this.gasDelivered} / 5 — zombiler seni yakaladı.`;
+      sub = win ? 'Depo doldu, motor çalıştı, zombiler arkada kaldı.' : `Benzin: ${this.gasDelivered} / ${GAS_REQUIRED} — zombiler seni yakaladı.`;
       // 2. bölüme eşyalarla devam
       if (win) saveProgress({ level: 2, inventory: this.inventory.serialize(), health: this.player.health, armor: this.player.armor });
     } else if (win) {
