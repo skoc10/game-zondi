@@ -65,9 +65,10 @@ export class Child {
     return this.state !== 'dead';
   }
 
-  // Zombiler hedef alabilir mi (yaya ve hayatta)
+  // Zombiler hedef alabilir mi: sadece kurtarılıp yaya takip ederken.
+  // Saklanan çocuk kapı açılıp "Benimle gel" denene kadar güvende.
   get targetable() {
-    return this.state === 'hiding' || this.state === 'following';
+    return this.state === 'following';
   }
 
   get center() {
@@ -80,7 +81,7 @@ export class Child {
   }
 
   takeDamage(amount, fromPos) {
-    if (!this.alive || this.state === 'safe' || amount <= 0) return;
+    if (!this.alive || this.state === 'safe' || this.state === 'hiding' || amount <= 0) return;
     this.health = Math.max(0, this.health - amount);
     this.hurt = 0.25;
     this.game.audio.play('child', this.pos, 1, this.pitch * 1.2);
