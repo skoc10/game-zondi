@@ -3,7 +3,7 @@ import { glyph } from '../core/Gamepad.js';
 import { angleDiff, formatTime } from '../core/math.js';
 import { GAS_REQUIRED } from '../world/World.js';
 
-const SLOT_LABELS = ['Levye', 'Tabanca', 'Pompalı', 'Makineli', 'Roket', 'Bomba', 'TNT', 'C4'];
+const SLOT_LABELS = ['Levye', 'Tabanca', 'Pompalı', 'Makineli', 'Roket', 'Bomba', 'TNT', 'C4', 'Lazer'];
 const $ = (id) => document.getElementById(id);
 
 export class HUD {

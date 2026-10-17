@@ -132,3 +132,5 @@ h2 { font-size: 34px; color: #9cff57; letter-spacing: 3px; margin-bottom: 8px; }
 @keyframes blink { 50% { opacity: 0.2; } }
 
 .version { font-size: 12px; opacity: 0.55; margin-top: 4px; }
+
+#fade.white { background: #fff; transition: opacity 0.25s; }

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { boxFromBase } from '../core/Collision.js';
 import { mulberry32 } from '../core/math.js';
 import { box, mat, glowMat, part, BOX_GEO } from './materials.js';
+import { buildFacility } from './facility.js';
 import { buildVillage, buildBarricade, buildMilitaryBase, buildRunway, buildHideoutBarricades, buildSafeCamp, road, CLEAR_ZONES, BASE, RUNWAY } from './regions.js';
 
 export const MAP_HALF = 225; // Oynanabilir alan ±225 m
@@ -81,6 +82,7 @@ export class World {
     if (this.level >= 2) buildSafeCamp(this);
     buildMilitaryBase(this);
     buildRunway(this);
+    buildFacility(this);
     this.buildBarrels();
     this.buildCrates();
     this.buildTrees();
@@ -313,7 +315,7 @@ export class World {
       [-44, 35], [-44.9, 35.8], [6, -8], [6.9, -8.7], [6, 20], [-6, -15], [7, 55],
       [64, -6], [64.8, -6.8], [-33, -24], [45, 38], [-14, 74], [10, -70], [-8, 95],
       [-125, 13], [-125.8, 13.9], [-160, 30.5], [-190, 40], [20, -150], [21, -151], [90, -150],
-      [120, 100], [-100, 130], [-40, -150], [180, 60], [70, -95], [71, -96],
+      [110, 90], [-100, 130], [-40, -150], [180, 60], [70, -95], [71, -96],
     ];
     for (const [x, z] of spots) this.addBarrel(x, z);
   }
@@ -343,7 +345,7 @@ export class World {
       [-20, 77], [10, 60], [-12, -60], [15, -95], [-80, 0], [80, 40], [60, -70], [-30, 100],
       [40, 90], [-90, -40], [90, -90], [-95, 80], [25, 10], [-15, 20],
       [-120, 40], [-152, 30], [-185, 12], [-168, -10], [-130, 0], [8, 172], [-16, 150],
-      [120, 60], [170, 120], [-200, 150], [-150, -160], [60, 180], [200, 30], [-60, -190],
+      [120, 60], [170, 92], [-200, 150], [-150, -160], [60, 180], [200, 30], [-60, -190],
       [100, -40], [-110, -100], [140, -40], [30, 200],
     ];
     for (const [x, z] of spots) this.addCrate(x, z);

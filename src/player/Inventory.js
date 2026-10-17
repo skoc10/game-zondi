@@ -6,9 +6,9 @@ export class Inventory {
   }
 
   reset() {
-    this.owned = { crowbar: true, pistol: false, shotgun: false, smg: false, rocket: false };
-    this.mag = { pistol: 0, shotgun: 0, smg: 0, rocket: 0 };
-    this.reserve = { pistol: 0, shotgun: 0, smg: 0, rocket: 0 };
+    this.owned = { crowbar: true, pistol: false, shotgun: false, smg: false, rocket: false, laser: false };
+    this.mag = { pistol: 0, shotgun: 0, smg: 0, rocket: 0, laser: 0 };
+    this.reserve = { pistol: 0, shotgun: 0, smg: 0, rocket: 0, laser: 0 };
     this.counts = { grenade: 0, head: 0, tnt: 0, c4: 0 };
     this.throwKind = 'grenade';
     this.active = 0;
@@ -92,7 +92,7 @@ export class Inventory {
       this.fixThrowKind();
       return;
     }
-    for (const id of ['smg', 'shotgun', 'pistol', 'rocket']) {
+    for (const id of ['laser', 'smg', 'shotgun', 'pistol', 'rocket']) {
       if (this.owned[id]) {
         this.active = SLOTS.indexOf(id);
         return;

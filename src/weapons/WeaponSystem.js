@@ -34,7 +34,7 @@ export class WeaponSystem {
     }
     // Elde tutma boyutu ve konumu (uzun silahlar kameraya girmesin)
     const VM = {
-      crowbar: [0.8, 0, -0.05, -0.1], pistol: [0.75, 0, 0.03, -0.18], shotgun: [0.6, 0, 0.03, -0.32],
+      crowbar: [0.8, 0, -0.05, -0.1], pistol: [0.75, 0, 0.03, -0.18], laser: [1, 0, 0.03, -0.12], shotgun: [0.6, 0, 0.03, -0.32],
       smg: [0.75, 0, 0.02, -0.18], rocket: [0.55, 0.02, 0.1, -0.3],
       grenade: [1.2, -0.04, 0.12, 0], head: [0.7, -0.05, 0.1, -0.05], tnt: [1, -0.05, 0.12, 0], c4: [1, -0.05, 0.14, 0],
     };
@@ -239,7 +239,7 @@ export class WeaponSystem {
       const res = this.hitscan(eye, dir, w);
       if (res.hitZombie) hitAny = true;
       if (res.killed) killAny = true;
-      if (i < 3) g.particles.tracer(muzzle, res.point);
+      if (i < 3) g.particles.tracer(muzzle, res.point, w.tracer);
     }
     if (hitAny) g.hud.hitMarker(killAny);
     if (inv.mag[id] === 0 && inv.reserve[id] > 0) this.startReload(id);
@@ -291,6 +291,8 @@ export class WeaponSystem {
       g.particles.emit({ pos: data.ref.pos.clone(), count: 6, colors: ['#8d6e3f', '#5d4325'], speed: 3, up: 1, life: 0.7, size: 0.1 });
       if (data.ref.hp <= 0) g.breakBarricade(data.ref);
       else if (melee) g.hud.toast(`Tahtalar kırılıyor... (${Math.ceil(data.ref.hp / 30)} darbe kaldı)`);
+    } else if (data.kind === 'pylon' && data.ref.alive) {
+      g.damagePylon(data.ref, dmg);
     } else if (data.kind === 'vehicle' && data.ref.alive) {
       g.vehicles.damage(data.ref, dmg * data.ref.spec.armor);
     }
@@ -436,7 +438,7 @@ export class WeaponSystem {
     const bp = player.bobPhase;
     const h = this.holder;
     // Silah sadece ateşli silahlarda göz hizasına gelir
-    const gunAim = modelId === 'pistol' || modelId === 'shotgun' || modelId === 'smg' || modelId === 'rocket' ? this.aim : 0;
+    const gunAim = ['pistol', 'shotgun', 'smg', 'rocket', 'laser'].includes(modelId) ? this.aim : 0;
     const aimX = gunAim * -0.28;
     h.position.set(
       HOLD.x + aimX + Math.cos(bp) * 0.02 * bob + this.sway.x,

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { coveredExplosionDamage } from '../core/combat.js';
 import { WEAPONS, THROWABLES } from '../weapons/weaponData.js';
-import { grenadeModel, zombieHeadModel, tntModel, c4Model, rocketProjectileModel } from '../world/models.js';
+import { grenadeModel, zombieHeadModel, tntModel, c4Model, rocketProjectileModel, flaskModel } from '../world/models.js';
 import { clamp } from '../core/math.js';
 
 const BARREL = { radius: 6, damage: 150 };
@@ -22,6 +22,7 @@ export class Explosives {
       this.lights.push({ light: l, life: 0 });
     }
     this.lightIdx = 0;
+    this.clouds = [];
   }
 
   clear() {
@@ -30,6 +31,53 @@ export class Explosives {
     this.projectiles = [];
     this.placed = [];
     this.pending = [];
+    this.clouds = [];
+  }
+
+  // Bilim insanının zehir şişesi: hedefe kavisle atılır, kırılınca zehir bulutu
+  throwFlask(origin, target) {
+    const mesh = flaskModel();
+    mesh.scale.setScalar(1.5);
+    mesh.position.copy(origin);
+    this.scene.add(mesh);
+    const dx = target.x - origin.x;
+    const dz = target.z - origin.z;
+    const dist = Math.hypot(dx, dz);
+    const t = Math.max(0.6, dist / 14);
+    const vel = new THREE.Vector3(dx / t, (target.y + 0.5 - origin.y) / t + 0.5 * GRAVITY * t, dz / t);
+    this.projectiles.push({
+      kind: 'flask', mesh, pos: origin.clone(), vel, impact: true, radius: 0, damage: 0,
+      gravity: true, life: 6, owner: 'enemy', fuse: 0, spin: new THREE.Vector3(6, 4, 0),
+    });
+  }
+
+  addCloud(pos) {
+    this.clouds.push({ pos: pos.clone().setY(0.6), radius: 4, life: 4, dps: 14, puff: 0 });
+    this.game.audio.play('glass', pos);
+  }
+
+  updateClouds(dt) {
+    const g = this.game;
+    for (let i = this.clouds.length - 1; i >= 0; i--) {
+      const c = this.clouds[i];
+      c.life -= dt;
+      if (c.life <= 0) {
+        this.clouds.splice(i, 1);
+        continue;
+      }
+      c.puff -= dt;
+      if (c.puff <= 0) {
+        c.puff = 0.05;
+        g.particles.emit({ pos: c.pos, count: 2, colors: ['#76ff03', '#b2ff59', '#64dd17'], speed: 1.5, spread: c.radius * 1.2, up: 0.4, life: 1.2, size: 0.5, gravity: -0.3, drag: 1, grow: 2, glow: true });
+      }
+      // Zehir duvardan geçmez
+      const victims = [];
+      if (g.player.alive && !g.player.vehicle) victims.push([g.player.center, (d) => { g.player.takeDamage(d, null); g.player.hurt = Math.min(1, g.player.hurt + 0.05); }]);
+      for (const k of g.children || []) if (k.targetable) victims.push([k.center, (d) => k.takeDamage(d, null)]);
+      for (const [p, hurt] of victims) {
+        if (p.distanceTo(c.pos) < c.radius && g.collision.lineOfSight(c.pos.x, c.pos.y + 0.3, c.pos.z, p.x, p.y, p.z)) hurt(c.dps * dt);
+      }
+    }
   }
 
   get c4Count() {
@@ -82,6 +130,10 @@ export class Explosives {
     }
     for (const bar of g.world.barricades) {
       if (bar.alive && bar.pos.distanceTo(p) < radius * 0.9) g.breakBarricade(bar);
+    }
+    for (const py of g.world.pylons || []) {
+      const d = py.pos.distanceTo(p);
+      if (py.alive && d < radius) g.damagePylon(py, coveredExplosionDamage(d, radius, damage, occluded(py.pos)));
     }
     // Zincirleme: variller, TNT, C4, sandıklar
     for (const b of g.world.barrels) {
@@ -292,6 +344,12 @@ export class Explosives {
       }
       // Düşman roketi oyuncuya
       if (!boom && p.owner === 'enemy' && p.pos.distanceTo(g.player.center) < (g.player.vehicle ? 2.2 : 0.9)) boom = p.pos.clone();
+      if (boom && p.kind === 'flask') {
+        this.projectiles.splice(i, 1);
+        this.scene.remove(p.mesh);
+        this.addCloud(boom);
+        continue;
+      }
       if (!boom && p.fuse > 0) {
         p.fuse -= dt;
         if (p.fuse <= 0) boom = p.pos.clone();
@@ -317,6 +375,7 @@ export class Explosives {
         this.explode(boom, p.radius, p.damage, { source: p.kind });
       }
     }
+    this.updateClouds(dt);
     // Patlama ışıkları söner
     for (const L of this.lights) {
       if (L.life <= 0) continue;

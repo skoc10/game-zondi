@@ -269,6 +269,26 @@ export class Sound {
         this.noiseBurst(d, { dur: 0.6, type: 'bandpass', freq: 1400 * pitch, q: 1.5, vol: 0.35, attack: 0.03 });
         break;
       }
+      case 'laser':
+        this.tone(d, { type: 'sawtooth', freq: 1800, freqEnd: 300, dur: 0.14, vol: 0.35 });
+        this.tone(d, { type: 'square', freq: 900, freqEnd: 200, dur: 0.1, vol: 0.15 });
+        break;
+      case 'siren':
+        this.tone(d, { type: 'sawtooth', freq: 500, freqEnd: 950, dur: 0.6, vol: 0.25, attack: 0.05 });
+        this.tone(d, { type: 'sawtooth', freq: 950, freqEnd: 500, dur: 0.6, vol: 0.25, delay: 0.6 });
+        break;
+      case 'shield':
+        this.tone(d, { type: 'sine', freq: 300, freqEnd: 900, dur: 0.18, vol: 0.3 });
+        this.noiseBurst(d, { dur: 0.15, type: 'highpass', freq: 3000, vol: 0.2 });
+        break;
+      case 'glass':
+        this.noiseBurst(d, { dur: 0.25, type: 'highpass', freq: 3500, vol: 0.6 });
+        this.tone(d, { type: 'triangle', freq: 2400, dur: 0.12, vol: 0.2 });
+        break;
+      case 'nuke':
+        this.noiseBurst(d, { dur: 4, freq: 900, freqEnd: 40, vol: 2, attack: 0.01 });
+        this.tone(d, { type: 'sine', freq: 60, freqEnd: 18, dur: 3.5, vol: 1.6 });
+        break;
       case 'radio':
         this.noiseBurst(d, { dur: 0.35, type: 'bandpass', freq: 2200, q: 0.8, vol: 0.35, attack: 0.01 });
         this.tone(d, { type: 'square', freq: 1400, dur: 0.07, vol: 0.12, delay: 0.32 });

@@ -102,7 +102,7 @@ export class Spawner {
       [4, BARRICADE_Z - 6, 'normal'], [-6, BARRICADE_Z + 10, 'soldier'], [10, BARRICADE_Z + 12, 'normal'],
       [bx - 30, bz, 'soldier'], [bx, bz - 20, 'soldier'], [bx + 20, bz + 10, 'soldier'], [bx + 10, bz + 30, 'armored'],
       [bx - 20, bz + 30, 'normal'], [bx + 5, bz + 5, 'big'],
-      [120, -80, 'normal'], [170, -80, 'normal'], [-60, 150, 'normal'], [-120, -120, 'normal'], [150, 100, 'normal'],
+      [120, -80, 'normal'], [170, -80, 'normal'], [-60, 150, 'normal'], [-120, -120, 'normal'], [150, 88, 'normal'],
     );
     for (const [x, zz, type] of spots) {
       const opts = {};
@@ -122,7 +122,7 @@ export class Spawner {
       this.cleanupTimer = 2;
       this.zombies.despawnFar(player.pos, 170);
     }
-    if (this.timer > 0 || !player.alive) return;
+    if (this.timer > 0 || !player.alive || this.disabled) return;
     const difficulty = Math.min(1, this.elapsed / 600);
     // Sınır oyuncunun 150 m çevresini sayar; zombiler bu alana yayılır
     const maxActive = Math.min(34, Math.round((14 + difficulty * 8) * (1 + night * 0.5)));

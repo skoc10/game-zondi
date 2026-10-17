@@ -22,6 +22,8 @@ export const CLEAR_ZONES = [
   [-196, 14, 0, 26], // köy yolu
   [-20, BARRICADE_Z - 12, 20, BARRICADE_Z + 12],
   [-150, -36, -118, -4], // okul
+  [100, 95, 205, 190], // nükleer tesis
+  [0, 115, 106, 125], // tesis yolu
 ];
 
 export function flat(world, x, z, w, d, color, y = 0.022) {

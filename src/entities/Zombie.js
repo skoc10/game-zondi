@@ -5,7 +5,7 @@ import { rayAABB } from '../core/Collision.js';
 import { clamp, angleDiff, rand, chance } from '../core/math.js';
 import { MAP_HALF } from '../world/World.js';
 import { part, mat, glowMat } from '../world/materials.js';
-import { WEAPON_MODELS } from '../world/models.js';
+import { WEAPON_MODELS, laserModel, flaskModel } from '../world/models.js';
 
 const tmp = new THREE.Vector3();
 
@@ -87,10 +87,30 @@ export class Zombie {
     const headMat = t.exploder ? glowMat('#b2ff59', 0.5).clone() : skin;
     this.headMat = headMat;
     part(this.head, hw, hh, hw, 0, hh / 2, 0, headMat);
-    const eye = glowMat(t.exploder ? '#ff6d00' : '#d4ff00', 1.5);
-    part(this.head, 0.09, 0.07, 0.02, -0.11, hh * 0.62, -hw / 2 - 0.01, eye);
-    part(this.head, 0.09, 0.07, 0.02, 0.11, hh * 0.62, -hw / 2 - 0.01, eye);
-    part(this.head, 0.24, 0.06, 0.02, 0, hh * 0.25, -hw / 2 - 0.01, '#1b3010');
+    if (t.human) {
+      // İnsan: saç, gözlük ve gaz maskesi
+      part(this.head, hw + 0.02, 0.12, hw + 0.02, 0, hh - 0.02, 0.02, t.boss ? '#bdbdbd' : '#4e342e');
+      part(this.head, 0.34, 0.12, 0.04, 0, hh * 0.64, -hw / 2 - 0.02, glowMat('#80deea', 0.4));
+      part(this.head, 0.26, 0.2, 0.1, 0, hh * 0.28, -hw / 2 - 0.05, t.gear);
+      part(this.head, 0.1, 0.1, 0.1, -0.15, hh * 0.22, -hw / 2 - 0.1, '#455a64');
+      part(this.head, 0.1, 0.1, 0.1, 0.15, hh * 0.22, -hw / 2 - 0.1, '#455a64');
+      // Önlük etekleri
+      part(inner, bodyW + 0.04, 0.35, 0.38, 0, 0.72, 0, t.cloth);
+      if (t.boss) {
+        // Kalkan küresi (kalkan direkleri yıkılınca kaybolur)
+        this.shieldMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(1.3, 16, 12),
+          new THREE.MeshBasicMaterial({ color: '#d500f9', transparent: true, opacity: 0.22, depthWrite: false }),
+        );
+        this.shieldMesh.position.y = 1.1;
+        inner.add(this.shieldMesh);
+      }
+    } else {
+      const eye = glowMat(t.exploder ? '#ff6d00' : '#d4ff00', 1.5);
+      part(this.head, 0.09, 0.07, 0.02, -0.11, hh * 0.62, -hw / 2 - 0.01, eye);
+      part(this.head, 0.09, 0.07, 0.02, 0.11, hh * 0.62, -hw / 2 - 0.01, eye);
+      part(this.head, 0.24, 0.06, 0.02, 0, hh * 0.25, -hw / 2 - 0.01, '#1b3010');
+    }
     if (t.exploder) {
       // Şişkin kabarcıklar
       part(this.head, 0.18, 0.18, 0.18, 0.25, hh * 0.7, 0.1, headMat);
@@ -105,7 +125,8 @@ export class Zombie {
     }
     // Silah elde
     if (this.weapon) {
-      const wm = WEAPON_MODELS[this.weapon]();
+      const builder = WEAPON_MODELS[this.weapon] || (this.weapon === 'flask' ? flaskModel : laserModel);
+      const wm = builder();
       wm.scale.setScalar(1.6);
       wm.position.set(0, -0.62, -0.15);
       wm.rotation.x = Math.PI / 2;
@@ -168,6 +189,9 @@ export class ZombieManager {
   spawn(typeKey, x, z, opts = {}) {
     if (typeKey === 'gunner' && !opts.weapon) opts.weapon = 'pistol';
     if (typeKey === 'soldier' && !opts.weapon) opts.weapon = 'smg';
+    if (typeKey === 'scientist' && !opts.weapon) opts.weapon = 'laser';
+    if (typeKey === 'chemist' && !opts.weapon) opts.weapon = 'flask';
+    if (typeKey === 'drKaos' && !opts.weapon) opts.weapon = 'bossLaser';
     const zb = new Zombie(typeKey, x, z, opts);
     zb.spawned = !!opts.spawned;
     this.scene.add(zb.mesh);
@@ -225,7 +249,7 @@ export class ZombieManager {
     if (z.roared || now - this.lastRoar < 400) return;
     z.roared = true;
     this.lastRoar = now;
-    this.game.audio.play('roar', z.pos, 1, z.type.pitch);
+    if (!z.type.human) this.game.audio.play('roar', z.pos, 1, z.type.pitch);
   }
 
   // Doğurucunun getirdiği, kovalamayan uzak zombiler kaldırılır
@@ -268,6 +292,21 @@ export class ZombieManager {
   // cause: 'bullet' | 'melee' | 'explosion'
   damage(z, amount, part, cause = 'bullet', dir = null) {
     if (!z.alive) return { killed: false };
+    // Kalkanlı boss: önce kalkan direkleri yıkılmalı
+    if (z.shielded) {
+      this.notice(z);
+      const now = performance.now();
+      if (now - (z.shieldFx || 0) > 150) {
+        z.shieldFx = now;
+        this.game.particles.emit({ pos: z.chestPos, count: 6, colors: ['#ea80fc', '#d500f9', '#fff'], speed: 3, life: 0.3, size: 0.08, glow: true, gravity: 0 });
+        this.game.audio.play('shield', z.pos, 0.7);
+      }
+      if (now - (this.shieldToast || 0) > 4000) {
+        this.shieldToast = now;
+        this.game.hud.toast('KALKAN AKTİF! Önce mor kalkan direklerini yık');
+      }
+      return { killed: false, shielded: true };
+    }
     const hadHelmet = z.helmet > 0;
     const hadArmor = z.armor > 0;
     const r = damageZombie(z, amount, part === 'head' ? 'head' : cause === 'explosion' || cause === 'vehicle' ? 'blast' : 'body', z.type.headMult);
@@ -529,7 +568,7 @@ export class ZombieManager {
       z.legL.rotation.x = swing;
       z.legR.rotation.x = -swing;
       z.attackAnim = Math.max(0, z.attackAnim - dt * 3);
-      const armBase = t.ranged && z.alerted ? -Math.PI / 2 : -1.35;
+      const armBase = t.ranged && z.alerted ? -Math.PI / 2 : t.human ? -0.1 : -1.35;
       z.armL.rotation.x = armBase + Math.sin(z.phase * 0.5) * 0.12 + z.attackAnim * 0.9;
       z.armR.rotation.x = (t.ranged && z.alerted ? -Math.PI / 2 : armBase - Math.sin(z.phase * 0.5) * 0.12) + z.attackAnim * 0.9;
       z.inner.rotation.z = Math.sin(z.phase * 0.5) * 0.06;
@@ -547,7 +586,7 @@ export class ZombieManager {
         if (dist < 10) z.groanTimer = rand(1.2, 2.5);
         else if (dist < 20) z.groanTimer = rand(2.5, 5);
         else z.groanTimer = rand(5, 10);
-        if (dist < 45) game.audio.play('groan', z.pos, dist < 10 ? 1 : dist < 20 ? 0.8 : 0.5, t.pitch);
+        if (dist < 45 && !t.human) game.audio.play('groan', z.pos, dist < 10 ? 1 : dist < 20 ? 0.8 : 0.5, t.pitch);
       }
     }
   }
@@ -589,7 +628,12 @@ export class ZombieManager {
       game.audio.play('rocket', z.pos);
       return;
     }
-    game.audio.play('enemyShot', z.pos, z.weapon === 'shotgun' ? 1.2 : 0.8);
+    if (w.flask) {
+      game.explosives.throwFlask(muzzle, player.pos.clone());
+      game.audio.play('throw', z.pos);
+      return;
+    }
+    game.audio.play(w.laser ? 'laser' : 'enemyShot', z.pos, z.weapon === 'shotgun' ? 1.2 : 0.8);
     game.particles.emit({ pos: muzzle, count: 4, colors: ['#ffeb3b', '#ff9800'], speed: 2, life: 0.08, size: 0.08, glow: true, gravity: 0 });
     // İsabet şansı: mesafe ve oyuncunun hızı düşürür
     const hitChance = clamp(w.accuracy * (1 - dist / (w.range * 1.6)) - player.speed * 0.035, 0.08, 0.9);
@@ -606,7 +650,7 @@ export class ZombieManager {
       end.copy(muzzle).addScaledVector(seg, wall.t);
       game.particles.sparks(end, seg.clone().multiplyScalar(-1));
     }
-    game.particles.tracer(muzzle, end, '#ff8a65');
+    game.particles.tracer(muzzle, end, w.laser ? '#ff1744' : '#ff8a65');
     if (hit) game.hitPlayer(w.damage, z.pos);
   }
 

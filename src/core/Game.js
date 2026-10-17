@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Input } from './Input.js';
 import { CollisionWorld } from './Collision.js';
 import { World, GAS_SPOTS, CAR_POS, GAS_REQUIRED } from '../world/World.js';
+import { destroyPylon } from '../world/facility.js';
 import { DayNight, NIGHT_START } from '../world/DayNight.js';
 import { BOX_GEO } from '../world/materials.js';
 import { Particles } from '../fx/Particles.js';
@@ -19,6 +20,7 @@ import { HUD } from '../ui/HUD.js';
 import { Menu } from '../ui/Menu.js';
 import { Radio } from '../ui/Radio.js';
 import { RescueMission } from '../levels/RescueMission.js';
+import { ReactorMission } from '../levels/ReactorMission.js';
 import { loadProgress, saveProgress, LAST_LEVEL, LEVEL_SELECT_UNLOCKED } from './Progress.js';
 import { applyLoadout } from '../levels/loadouts.js';
 import { randInt, chance, pickWeighted, rand, formatTime } from './math.js';
@@ -100,7 +102,11 @@ export class Game {
     this.explosives = new Explosives(this.scene, this);
     this.weapons = new WeaponSystem(this);
     // 2. bölümde mavi araba sürülebilir araç olarak gelir
-    this.vehicles = new VehicleManager(this, level === 2 ? [['sedan', CAR_POS.x, CAR_POS.z, 0]] : []);
+    const extra = {
+      2: [['sedan', CAR_POS.x, CAR_POS.z, 0]],
+      3: [['sedan', 7, 174, Math.PI / 2], ['jeep', -6, 176, Math.PI / 2]],
+    }[level] || [];
+    this.vehicles = new VehicleManager(this, extra);
     this.inventory.reset();
     if (level === 1) GAS_SPOTS.forEach((s, i) => this.pickups.spawn('gas', s.x, s.z, { spot: i }));
     this.spawner.populate();
@@ -114,6 +120,7 @@ export class Game {
     this.nights = 0;
     this.stats = { kills: 0, headshots: 0, explosionKills: 0, roadkills: 0, explosions: 0, time: 0 };
     if (level === 2) this.mission = new RescueMission(this);
+    else if (level === 3) this.mission = new ReactorMission(this);
     if (this.weapons) this.resize();
   }
 
@@ -167,6 +174,18 @@ export class Game {
     if (this.mission) this.mission.deadChild = child;
     this.hud.banner(`${child.name.toUpperCase()} ÖLDÜ`, 3);
     this.childDeadTimer = 0;
+  }
+
+  damagePylon(pylon, dmg) {
+    if (!pylon.alive) return;
+    pylon.hp -= dmg;
+    this.particles.emit({ pos: pylon.pos.clone().setY(3.2), count: 5, colors: ['#ea80fc', '#d500f9'], speed: 3, life: 0.4, size: 0.1, glow: true });
+    this.audio.play('shield', pylon.pos, 0.6);
+    if (pylon.hp <= 0) {
+      destroyPylon(this.world, pylon);
+      this.explosives.explode(pylon.pos.clone().setY(2), 3.5, 40);
+      this.hud.toast('Kalkan direği yıkıldı!');
+    }
   }
 
   breakBarricade(bar) {
@@ -285,7 +304,9 @@ export class Game {
     const x = z.pos.x;
     const zz = z.pos.z;
     const off = () => rand(-0.6, 0.6);
-    if (z.weapon) {
+    if (z.type.human) this.stats.scientists = (this.stats.scientists || 0) + 1;
+    if (z.typeKey === 'chemist' && chance(0.5)) this.pickups.spawn(chance(0.5) ? 'medkit' : 'grenade', x + off(), zz + off());
+    if (z.weapon && DROP_AMMO[z.weapon]) {
       const [a, b] = DROP_AMMO[z.weapon];
       this.pickups.spawn('weapon', x + off(), zz + off(), { weapon: z.weapon, ammo: randInt(a, b) });
       z.armR.children.forEach((c) => { if (c.type === 'Group') c.visible = false; });
@@ -540,6 +561,7 @@ export class Game {
     if (this.mission) {
       const r = this.mission.update(dt);
       if (r === 'win') this.showEnd(true);
+      else if (r === 'lose') this.showEnd(false, 'mission');
     }
     this.radio.update(dt);
     this.shake = Math.max(0, this.shake - dt * 2.5);

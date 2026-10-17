@@ -134,7 +134,7 @@ export class Input {
     s.pause = kp.has('Escape') || kp.has('KeyP');
     s.next = this.wheel > 0 || kp.has('KeyQ');
     s.prev = this.wheel < 0;
-    for (let i = 1; i <= 8; i++) if (kp.has('Digit' + i)) s.slot = i - 1;
+    for (let i = 1; i <= 9; i++) if (kp.has('Digit' + i)) s.slot = i - 1;
     s.menuUp = kp.has('ArrowUp') || kp.has('KeyW');
     s.menuDown = kp.has('ArrowDown') || kp.has('KeyS');
     s.menuLeft = kp.has('ArrowLeft') || kp.has('KeyA');
