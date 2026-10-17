@@ -86,8 +86,8 @@ export function buildEngine(ctx, dest, kind, noiseBuffer) {
       set(lfo.frequency, f / 2);
       return (0.28 + rpm * 0.22) * 3;
     };
-  } else if (kind === 'jeep' || kind === 'pickup') {
-    const base = kind === 'jeep' ? 55 : 46;
+  } else if (kind === 'jeep' || kind === 'pickup' || kind === 'sedan') {
+    const base = kind === 'jeep' ? 55 : kind === 'sedan' ? 62 : 46;
     const a = osc('sawtooth', base);
     const sub = osc('square', base / 2);
     const subG = gain(0.6);

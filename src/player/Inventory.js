@@ -14,6 +14,36 @@ export class Inventory {
     this.active = 0;
   }
 
+  // Bölümler arası taşıma
+  serialize() {
+    return JSON.parse(JSON.stringify({
+      owned: this.owned, mag: this.mag, reserve: this.reserve, counts: this.counts,
+      throwKind: this.throwKind, active: this.active,
+    }));
+  }
+
+  restore(data) {
+    this.reset();
+    if (!data || typeof data !== 'object') return;
+    for (const key of ['owned', 'mag', 'reserve', 'counts']) {
+      const src = data[key];
+      if (!src || typeof src !== 'object') continue;
+      for (const k of Object.keys(this[key])) {
+        const v = src[k];
+        if (key === 'owned') this.owned[k] = k === 'crowbar' ? true : !!v;
+        else if (Number.isFinite(v) && v >= 0) this[key][k] = Math.floor(v);
+      }
+    }
+    for (const k of Object.keys(this.counts)) this.counts[k] = Math.min(ITEM_MAX[k], this.counts[k]);
+    for (const k of Object.keys(this.mag)) {
+      this.mag[k] = Math.min(WEAPONS[k].mag, this.mag[k]);
+      this.reserve[k] = Math.min(WEAPONS[k].maxReserve, this.reserve[k]);
+    }
+    if (data.throwKind === 'head' || data.throwKind === 'grenade') this.throwKind = data.throwKind;
+    if (Number.isInteger(data.active)) this.active = data.active;
+    this.ensureValid();
+  }
+
   get activeId() {
     return SLOTS[this.active];
   }

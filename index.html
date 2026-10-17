@@ -18,7 +18,8 @@
 
     <div id="top-left" class="panel">
       <div id="objective">Benzin bidonlarını bul</div>
-      <div class="row"><span class="gas-icon"></span> Benzin <b id="gas-count">0 / 5</b></div>
+      <div class="row" id="gas-row"><span class="gas-icon"></span> Benzin <b id="gas-count">0 / 5</b></div>
+      <div class="bar" id="child-row" style="display:none"><label>DENİZ</label><div class="track"><div id="child-fill" class="fill child"></div></div><b id="child-val"></b></div>
     </div>
     <div id="top-right" class="panel">
       <div id="time-label">☀ Gündüz</div>
@@ -30,6 +31,8 @@
     <div id="hitmarker"></div>
     <div id="banner"></div>
     <div id="toasts"></div>
+
+    <div id="radio" class="panel hidden"><div class="radio-head"><span class="radio-dot"></span>TELSİZ · <span id="radio-from"></span></div><div id="radio-text"></div></div>
 
     <div id="prompt"><span id="prompt-key">E</span><span id="prompt-text"></span><div id="prompt-bar"></div></div>
 
@@ -58,7 +61,8 @@
     <div class="menu-box">
       <h1>ZONDI</h1>
       <p class="sub">Arabanın deposu boş. Gece yaklaşıyor.<br/>5 benzin bidonu bul, arabaya dök ve kaç!</p>
-      <div class="menu-item btn primary" data-action="play">OYNA</div>
+      <div class="menu-item btn primary" data-action="continue" id="btn-continue" style="display:none">DEVAM ET: 2. BÖLÜM</div>
+      <div class="menu-item btn primary" data-action="play">OYNA (1. BÖLÜM)</div>
       <div class="menu-item btn" data-action="controls">KONTROLLER</div>
       <div class="menu-item btn" data-action="settings">AYARLAR</div>
       <p class="pad-status" id="pad-status">Oyun kolu: bağlı değil (bağlamak için koldaki bir tuşa bas)</p>
@@ -135,7 +139,8 @@
       <h2 id="end-title">ÖLDÜN</h2>
       <p class="sub" id="end-sub"></p>
       <div id="end-stats"></div>
-      <div class="menu-item btn primary" data-action="restart">YENİDEN OYNA</div>
+      <div class="menu-item btn primary" data-action="next" id="btn-next" style="display:none">2. BÖLÜME DEVAM</div>
+      <div class="menu-item btn" data-action="restart">YENİDEN OYNA</div>
       <div class="menu-item btn" data-action="quit">ANA MENÜ</div>
     </div>
   </div>

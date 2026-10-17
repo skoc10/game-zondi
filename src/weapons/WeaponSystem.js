@@ -285,6 +285,12 @@ export class WeaponSystem {
       g.audio.play('wood', data.ref.pos, 0.6);
       g.particles.emit({ pos: data.ref.pos.clone().setY(0.8), count: 4, colors: ['#8d6e3f', '#5d4325'], speed: 2, up: 1, life: 0.6, size: 0.08 });
       if (data.ref.hp <= 0) g.breakCrate(data.ref);
+    } else if (data.kind === 'barricade' && data.ref.alive) {
+      data.ref.hp -= dmg;
+      g.audio.play('wood', data.ref.pos, 0.8);
+      g.particles.emit({ pos: data.ref.pos.clone(), count: 6, colors: ['#8d6e3f', '#5d4325'], speed: 3, up: 1, life: 0.7, size: 0.1 });
+      if (data.ref.hp <= 0) g.breakBarricade(data.ref);
+      else if (melee) g.hud.toast(`Tahtalar kırılıyor... (${Math.ceil(data.ref.hp / 30)} darbe kaldı)`);
     } else if (data.kind === 'vehicle' && data.ref.alive) {
       g.vehicles.damage(data.ref, dmg * data.ref.spec.armor);
     }

@@ -269,6 +269,21 @@ export class Sound {
         this.noiseBurst(d, { dur: 0.6, type: 'bandpass', freq: 1400 * pitch, q: 1.5, vol: 0.35, attack: 0.03 });
         break;
       }
+      case 'radio':
+        this.noiseBurst(d, { dur: 0.35, type: 'bandpass', freq: 2200, q: 0.8, vol: 0.35, attack: 0.01 });
+        this.tone(d, { type: 'square', freq: 1400, dur: 0.07, vol: 0.12, delay: 0.32 });
+        break;
+      case 'child': {
+        // Kısa, tiz hıçkırık/imdat tonu
+        const f = 520 * pitch;
+        this.tone(d, { type: 'triangle', freq: f, freqEnd: f * 1.25, dur: 0.18, vol: 0.35 });
+        this.tone(d, { type: 'triangle', freq: f * 1.2, freqEnd: f * 0.8, dur: 0.35, vol: 0.3, delay: 0.2 });
+        break;
+      }
+      case 'turret':
+        this.noiseBurst(d, { dur: 0.09, freq: 4000, freqEnd: 900, vol: 0.6 });
+        this.tone(d, { type: 'square', freq: 300, freqEnd: 120, dur: 0.05, vol: 0.2 });
+        break;
       case 'bite':
         this.noiseBurst(d, { dur: 0.22, type: 'bandpass', freq: 500 * pitch, q: 2, vol: 0.8 });
         this.tone(d, { type: 'sawtooth', freq: 90 * pitch, freqEnd: 60 * pitch, dur: 0.25, vol: 0.4 });

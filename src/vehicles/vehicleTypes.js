@@ -18,6 +18,12 @@ export const VEHICLE_TYPES = {
     hp: 400, fuel: 180, ram: 1.2, armor: 0.9, grip: 5, gears: 4,
     length: 5.0, width: 2.1, height: 2.0, seat: [-0.45, 0.8, -0.3], cam: [9, 3.4],
   },
+  sedan: {
+    name: 'Mavi araba', enter: 'Arabaya bin', kind: 'ground',
+    maxSpeed: 24, reverse: 8, accel: 11, brake: 22, turn: 2.0,
+    hp: 350, fuel: 200, ram: 1.0, armor: 0.9, grip: 6, gears: 5,
+    length: 4.4, width: 2.0, height: 1.8, seat: [-0.45, 0.75, 0.3], cam: [8.5, 3.2],
+  },
   tank: {
     name: 'Tank', enter: 'Tanka bin', kind: 'ground',
     maxSpeed: 8, reverse: 5, accel: 5, brake: 12, turn: 1.0, pivot: true,

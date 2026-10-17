@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { boxFromBase } from '../core/Collision.js';
 import { mulberry32 } from '../core/math.js';
 import { box, mat, glowMat, part, BOX_GEO } from './materials.js';
-import { buildVillage, buildBarricade, buildMilitaryBase, buildRunway, road, CLEAR_ZONES, BASE, RUNWAY } from './regions.js';
+import { buildVillage, buildBarricade, buildMilitaryBase, buildRunway, buildSchoolBarricade, buildSafeCamp, road, CLEAR_ZONES, BASE, RUNWAY } from './regions.js';
 
 export const MAP_HALF = 225; // Oynanabilir alan ±225 m
 
@@ -31,7 +31,11 @@ export const CAR_POS = { x: 0, z: 0 };
 export const PLAYER_START = { x: 2.8, z: 1.2, yaw: 0 };
 
 export class World {
-  constructor(scene, collision) {
+  // level 2: kaçış arabası yerine sürülebilir sedan (VehicleManager), okul barikatı, güvenli kamp
+  constructor(scene, collision, level = 1) {
+    this.level = level;
+    this.barricades = [];
+    this.turrets = [];
     this.scene = scene;
     this.collision = collision;
     this.rng = mulberry32(1337);
@@ -56,7 +60,8 @@ export class World {
   build() {
     this.buildGround();
     this.buildRoads();
-    this.buildCar();
+    if (this.level === 1) this.buildCar();
+    else this.car = null;
     this.buildGasStation();
     this.buildBarn();
     this.house(-60, -70, 10, 8, 3.4, 'e', '#c9b79c', '#5d4037');
@@ -67,6 +72,10 @@ export class World {
     this.buildWrecks();
     buildVillage(this);
     buildBarricade(this);
+    if (this.level === 2) {
+      buildSchoolBarricade(this);
+      buildSafeCamp(this);
+    }
     buildMilitaryBase(this);
     buildRunway(this);
     this.buildBarrels();
@@ -411,6 +420,12 @@ export class World {
     barrel.alive = false;
     this.root.remove(barrel.mesh);
     this.collision.remove(barrel.box);
+  }
+
+  removeBarricade(bar) {
+    bar.alive = false;
+    this.root.remove(bar.mesh);
+    this.collision.remove(bar.box);
   }
 
   removeCrate(crate) {

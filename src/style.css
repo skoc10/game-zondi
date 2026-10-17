@@ -117,3 +117,14 @@ h2 { font-size: 34px; color: #9cff57; letter-spacing: 3px; margin-bottom: 8px; }
 #veh-extra { font-size: 13px; margin-top: 4px; color: #c6ff9e; }
 #veh-help { font-size: 11px; opacity: 0.7; margin-top: 4px; }
 #prompt.nokey #prompt-key { display: none; }
+
+.fill.child { background: linear-gradient(90deg, #f9a825, #fff176); }
+#child-row b { width: 60px; font-size: 13px; }
+.compass-mark.safe b { background: #2e7d32; }
+.compass-mark.child b { background: #f9a825; color: #222; }
+#radio { left: 14px; bottom: 120px; width: 380px; border-color: rgba(120, 220, 255, 0.35); background: rgba(5, 20, 30, 0.75); }
+#radio.hidden { display: none; }
+.radio-head { font-size: 11px; letter-spacing: 1px; color: #80deea; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+.radio-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff5252; animation: blink 0.8s infinite; }
+#radio-text { font-size: 15px; line-height: 1.4; }
+@keyframes blink { 50% { opacity: 0.2; } }

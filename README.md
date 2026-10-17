@@ -4,6 +4,17 @@ Basit, hızlı ve eğlenceli bir birinci şahıs zombi hayatta kalma oyunu. Graf
 
 Gece, deposu boş bir arabanın yanında doğuyorsun. Elinde sadece **fener** ve **levye** var. Haritadaki **5 benzin bidonunu** bul, arabaya dök ve kaç! İstersen yolda bulduğun cipe, tanka, helikoptere ya da uçağa binip zombileri ez veya havadan bombala. Zombiler yeşil ve kafaları dikdörtgen. Silahlı zombileri öldürüp silahlarını alabilirsin. Variller, TNT ve C4 ile hepsini havaya uçurabilirsin.
 
+## Bölümler
+
+1. **Benzin Bitmeden:** Deposu boş arabanın yanında fener ve levyeyle başlarsın. 5 benzin bidonunu bul, arabaya dök ve kaç.
+2. **Okuldaki Çocuk:** 1. bölüm bitince başlar. Gecedir, benzini dolu mavi arabanın içindesin ve eşyaların seninle.
+   - Telsizden Deniz adında bir çocuğun yardım çağrısı gelir. Köyün güneyindeki okulda saklanıyor; okulun kapısı tahtalarla çakılı ve çevresi zombi dolu.
+   - Tahtaları levyeyle (3 darbe) ya da silah/patlayıcıyla kır. İçeride Deniz'e **E / X** ile "Benimle gel!" de.
+   - Deniz seni takip eder. Zombiler ona da saldırır, ölürse bölüm biter. Araca binince o da biner (uçak hariç).
+   - Yeşil dumanı takip ederek onu kuzey barikatındaki **güvenli bölgeye** götür. Kamptaki nöbetçi taretler yaklaşan zombileri vurur.
+
+İlerleme tarayıcıda kaydedilir. Ana menüdeki **"DEVAM ET: 2. BÖLÜM"** ile 2. bölüme, 1. bölümün sonundaki eşyalarla geri dönebilirsin.
+
 ## Çalıştırma
 
 ```bash
@@ -109,7 +120,8 @@ src/entities/  Zombiler (tür tablosu + yapay zeka), doğurucu, yerdeki eşyalar
 src/vehicles/  Araç tablosu, saf araç fiziği (test edilir), araç modelleri, sürüş/ezme/kamera
 src/fx/        Parçacıklar, mermi izleri, yer lekeleri
 src/audio/     Kodla üretilen ses efektleri ve müzik
-src/ui/        HUD ve menüler
+src/ui/        HUD, menüler, telsiz
+src/levels/    2. bölüm görevi (kurtarma)
 tests/         Hasar, envanter, kol eşlemesi, çarpışma ızgarası, araç fiziği testleri
 ```
 

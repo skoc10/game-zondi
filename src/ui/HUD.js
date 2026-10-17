@@ -19,6 +19,7 @@ export class HUD {
       compass: $('compass-strip'), toasts: $('toasts'), hurt: $('hurt'), hurtDir: $('hurt-dir'),
       crosshair: $('crosshair'), hitmarker: $('hitmarker'), banner: $('banner'), flash: $('flashlight-state'),
       lowhp: $('lowhp'),
+      gasRow: $('gas-row'), childRow: $('child-row'), childFill: $('child-fill'), childVal: $('child-val'),
       vPanel: $('vehicle-panel'), vName: $('veh-name'), vSpeed: $('veh-speed'), vFuel: $('veh-fuel'),
       vHp: $('veh-hp'), vExtra: $('veh-extra'), vHelp: $('veh-help'), weaponPanel: $('bottom-right'),
     };
@@ -154,13 +155,23 @@ export class HUD {
     this.el.slots.classList.toggle('pad', dev === 'pad');
 
     // Görev
-    const delivered = g.gasDelivered;
+    const m = g.mission;
     let obj;
-    if (delivered >= 5) obj = 'Depo dolu! Arabaya bin ve KAÇ!';
-    else if (p.carryingGas) obj = 'Benzini arabaya götür';
-    else obj = 'Benzin bidonlarını bul (pusulada kırmızı)';
+    if (m) {
+      obj = m.objective();
+      const c = m.counter();
+      this.set('cv', this.el.childVal, 'textContent', c.value);
+      this.set('cf', this.el.childFill.style, 'width', `${Math.max(0, c.frac) * 100}%`);
+    } else {
+      const delivered = g.gasDelivered;
+      if (delivered >= 5) obj = 'Depo dolu! Arabaya bin ve KAÇ!';
+      else if (p.carryingGas) obj = 'Benzini arabaya götür';
+      else obj = 'Benzin bidonlarını bul (pusulada kırmızı)';
+      this.set('gas', this.el.gas, 'textContent', `${delivered} / 5`);
+    }
     this.set('obj', this.el.objective, 'textContent', obj);
-    this.set('gas', this.el.gas, 'textContent', `${delivered} / 5`);
+    this.set('gasrow', this.el.gasRow.style, 'display', m ? 'none' : '');
+    this.set('childrow', this.el.childRow.style, 'display', m ? '' : 'none');
 
     const info = g.dayNight.phaseInfo();
     this.set('time', this.el.time, 'textContent', `${info.icon} ${info.label} · ${formatTime(info.remaining)}`);
@@ -252,18 +263,26 @@ export class HUD {
       const d = Math.round(Math.hypot(dx, dz));
       if (m.dist.textContent !== `${d}m`) m.dist.textContent = `${d}m`;
     };
-    target('car', g.world.car.pos.x, g.world.car.pos.z, 'ARABA', 'car');
-    const gasPickups = g.pickups.list.filter((pk) => pk.type === 'gas');
     const live = new Set();
-    if (!p.carryingGas) {
-      for (const pk of gasPickups) {
+    if (g.world.car) {
+      live.add('car');
+      target('car', g.world.car.pos.x, g.world.car.pos.z, 'ARABA', 'car');
+    }
+    if (g.mission) {
+      for (const t of g.mission.compassTargets()) {
+        live.add(t.key);
+        target(t.key, t.x, t.z, t.label, t.cls);
+      }
+    } else if (!p.carryingGas) {
+      for (const pk of g.pickups.list) {
+        if (pk.type !== 'gas') continue;
         const key = 'gas-' + pk.spot;
         live.add(key);
         target(key, pk.pos.x, pk.pos.z, 'BENZİN', 'gas');
       }
     }
     for (const key of [...this.compassMarkers.keys()]) {
-      if (key.startsWith('gas-') && !live.has(key)) this.removeMarker(key);
+      if (!key.startsWith('dir-') && !live.has(key)) this.removeMarker(key);
     }
   }
 }

@@ -8,6 +8,10 @@ export const BASE = { x: 150, z: -150, half: 45 };
 export const RUNWAY = { x1: 62, x2: 216, z: -80, w: 16 };
 export const VILLAGE = { x: -150, z: 20 };
 export const BARRICADE_Z = 160;
+// 2. bölüm: çocuğun saklandığı okul ve güvenli bölge
+export const SCHOOL = { x: -135, z: -22, w: 16, d: 10, doorZ: -17 };
+export const SAFE_ZONE = { minX: -18, maxX: 18, minZ: BARRICADE_Z + 2, maxZ: BARRICADE_Z + 32, flareX: 1, flareZ: BARRICADE_Z + 14 };
+export const TURRETS = [{ x: -9, z: BARRICADE_Z + 2.5 }, { x: 11, z: BARRICADE_Z + 2.5 }];
 
 // Ağaç/kaya yerleştirilmeyecek alanlar [minX, minZ, maxX, maxZ]
 export const CLEAR_ZONES = [
@@ -17,6 +21,7 @@ export const CLEAR_ZONES = [
   [0, -156, 106, -144], // üs yolu
   [-196, 14, 0, 26], // köy yolu
   [-20, BARRICADE_Z - 12, 20, BARRICADE_Z + 12],
+  [-150, -36, -118, -4], // okul
 ];
 
 export function flat(world, x, z, w, d, color, y = 0.022) {
@@ -87,9 +92,117 @@ export function buildVillage(world) {
   world.house(-170, -14, 9, 9, 6, 'n', '#e0dccf', '#455a64');
   world.block(-174, 0, -18, 2, 12, 2, '#e0dccf');
   world.block(-174, 12, -18, 1.4, 2, 1.4, '#455a64');
+  buildSchool(world);
   // Kuyu, çit parçaları
   world.block(-128, 0, 46, 1.6, 0.9, 1.6, '#757575');
   for (const [x, z] of [[-140, 46], [-160, 46], [-176, -4]]) world.block(x, 0, z, 6, 1, 0.3, '#6d4c41');
+}
+
+function signTexture(text, bg, fg) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, 256, 96);
+  ctx.fillStyle = fg;
+  ctx.font = 'bold 60px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 128, 52);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// Köy okulu: kapısı yola (güneye, +z) bakar; içinde sıralar ve kara tahta
+function buildSchool(world) {
+  const { x, z, w, d } = SCHOOL;
+  world.house(x, z, w, d, 3.6, 's', '#e8c35a', '#8d3b2a', 2.4);
+  // Tabela
+  const tex = signTexture('OKUL', '#1e5aa8', '#ffffff');
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.0, 0.15), [
+    mat('#14417a'), mat('#14417a'), mat('#14417a'), mat('#14417a'),
+    new THREE.MeshLambertMaterial({ map: tex, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.25 }),
+    new THREE.MeshLambertMaterial({ map: tex }),
+  ]);
+  sign.position.set(x, 3.0, z + d / 2 + 0.3);
+  world.root.add(sign);
+  // Kara tahta (kuzey duvarının içi)
+  const board = box(4, 1.4, 0.08, mat('#1f3b2b'));
+  board.position.set(x, 1.6, z - d / 2 + 0.25);
+  world.root.add(board);
+  // Sıralar
+  for (const dz of [-2.5, 0, 2.2]) {
+    for (const dx of [-5, -2, 2, 5]) {
+      world.block(x + dx, 0, z + dz, 1.4, 0.75, 0.6, '#8d6e3f');
+      world.block(x + dx, 0, z + dz + 0.6, 0.5, 0.45, 0.4, '#5d4325', false);
+    }
+  }
+  // Bahçe çiti ve salıncak direkleri
+  world.block(x - 10, 0, z + 9, 0.15, 2.4, 0.15, '#c62828', false);
+  world.block(x - 7, 0, z + 9, 0.15, 2.4, 0.15, '#c62828', false);
+  world.block(x - 8.5, 2.3, z + 9, 3.2, 0.15, 0.15, '#c62828', false);
+}
+
+// 2. bölüm: okul kapısına çakılı tahtalar (levyeyle kırılır)
+export function buildSchoolBarricade(world) {
+  const { x, doorZ } = SCHOOL;
+  const g = new THREE.Group();
+  const wood = mat('#8d6e3f');
+  const dark = mat('#5d4325');
+  [[0.5, 0.35], [1.2, -0.3], [1.9, 0.25], [0.9, 0]].forEach(([y, rot], i) => {
+    const plank = box(2.9, 0.22, 0.08, i % 2 ? dark : wood);
+    plank.position.set(0, y, 0);
+    plank.rotation.z = rot;
+    g.add(plank);
+  });
+  g.position.set(x, 0, doorZ + 0.25);
+  world.root.add(g);
+  const bar = { mesh: g, pos: new THREE.Vector3(x, 1, doorZ + 0.25), hp: 90, alive: true };
+  bar.box = world.collision.add(boxFromBase(x, 0, doorZ + 0.25, 2.5, 2.6, 0.35, { kind: 'barricade', ref: bar }));
+  world.barricades.push(bar);
+  return bar;
+}
+
+// 2. bölüm: kuzey barikatı ışıklandırılmış güvenli kampa dönüşür
+export function buildSafeCamp(world) {
+  const z = BARRICADE_Z;
+  // Projektör direkleri (parlayan başlık)
+  for (const [x, zz] of [[-16, z + 3], [17, z + 3], [-15, z + 24], [15, z + 24]]) {
+    world.block(x, 0, zz, 0.3, 7, 0.3, '#616161');
+    const lamp = box(1.2, 0.5, 0.6, glowMat('#fff8e1', 2.5));
+    lamp.position.set(x, 7.1, zz);
+    world.root.add(lamp);
+  }
+  // Kamp aydınlatması (sadece 2. bölüm sahnesinde)
+  const flood = new THREE.PointLight('#fff3d0', 90, 45, 1.3);
+  flood.position.set(0, 8, z + 12);
+  world.root.add(flood);
+  // Çadırlar ve sağlık çadırı
+  for (const [x, zz, c] of [[-10, z + 20, '#5b6b3a'], [10, z + 20, '#e0e0e0']]) {
+    world.block(x, 0, zz, 6, 2.3, 4.5, c);
+    const roof = box(6.2, 3.2, 3.2, mat(c));
+    roof.position.set(x, 2.3, zz);
+    roof.rotation.x = Math.PI / 4;
+    world.root.add(roof);
+  }
+  const cross = box(1.2, 1.2, 0.05, glowMat('#d32f2f', 0.6));
+  cross.position.set(10, 1.4, z + 17.7);
+  world.root.add(cross);
+  // Taretler: kum torbalı yuva + dönen başlık
+  world.turrets = TURRETS.map(({ x, z: tz }) => {
+    world.block(x, 0, tz + 1, 3, 0.9, 0.8, '#a89a6b');
+    world.block(x, 0, tz + 1.8, 0.5, 1.1, 0.5, '#333');
+    const head = new THREE.Group();
+    head.position.set(x, 1.4, tz + 1.8);
+    part(head, 0.7, 0.45, 0.8, 0, 0, 0, '#3f4a22');
+    part(head, 0.12, 0.12, 1.4, 0, 0.05, -0.9, '#1a1a1a');
+    const led = part(head, 0.12, 0.12, 0.12, 0.25, 0.25, 0.2, glowMat('#00e676', 2));
+    void led;
+    world.root.add(head);
+    return { x, z: tz + 1.8, head, cooldown: 0 };
+  });
 }
 
 export function buildBarricade(world) {

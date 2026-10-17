@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Input } from './Input.js';
 import { CollisionWorld } from './Collision.js';
-import { World, GAS_SPOTS } from '../world/World.js';
+import { World, GAS_SPOTS, CAR_POS } from '../world/World.js';
 import { DayNight, NIGHT_START } from '../world/DayNight.js';
 import { BOX_GEO } from '../world/materials.js';
 import { Particles } from '../fx/Particles.js';
@@ -17,6 +17,9 @@ import { VehicleManager } from '../vehicles/VehicleManager.js';
 import { WEAPONS, SLOTS, DROP_AMMO, BOX_AMMO, THROWABLES, ITEM_MAX } from '../weapons/weaponData.js';
 import { HUD } from '../ui/HUD.js';
 import { Menu } from '../ui/Menu.js';
+import { Radio } from '../ui/Radio.js';
+import { RescueMission } from '../levels/RescueMission.js';
+import { loadProgress, saveProgress } from './Progress.js';
 import { randInt, chance, pickWeighted, rand, formatTime } from './math.js';
 
 export class Game {
@@ -31,6 +34,8 @@ export class Game {
     this.inventory = new Inventory();
     this.hud = new HUD();
     this.menu = new Menu(this);
+    this.radio = new Radio(this);
+    this.level = 1;
     this.state = 'menu';
     this.menuReturn = 'menu-main';
     this.last = 0;
@@ -72,13 +77,18 @@ export class Game {
     this.renderer.renderLists.dispose();
   }
 
-  buildScene() {
+  buildScene(level = 1) {
+    if (this.mission) this.mission.dispose();
+    this.mission = null;
+    this.child = null;
+    this.level = level;
+    this.radio.clear();
     this.disposeScene();
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 400);
     this.scene.add(this.camera);
     this.collision = new CollisionWorld();
-    this.world = new World(this.scene, this.collision);
+    this.world = new World(this.scene, this.collision, level);
     this.dayNight = new DayNight(this.scene);
     this.particles = new Particles(this.scene);
     this.player = new Player(this.camera, this.collision, this.audio);
@@ -87,9 +97,10 @@ export class Game {
     this.spawner = new Spawner(this.zombies, this.collision);
     this.explosives = new Explosives(this.scene, this);
     this.weapons = new WeaponSystem(this);
-    this.vehicles = new VehicleManager(this);
+    // 2. bölümde mavi araba sürülebilir araç olarak gelir
+    this.vehicles = new VehicleManager(this, level === 2 ? [['sedan', CAR_POS.x, CAR_POS.z, 0]] : []);
     this.inventory.reset();
-    GAS_SPOTS.forEach((s, i) => this.pickups.spawn('gas', s.x, s.z, { spot: i }));
+    if (level === 1) GAS_SPOTS.forEach((s, i) => this.pickups.spawn('gas', s.x, s.z, { spot: i }));
     this.spawner.populate();
     this.gasDelivered = 0;
     this.pour = 0;
@@ -100,6 +111,7 @@ export class Game {
     this.escapeTime = 0;
     this.nights = 0;
     this.stats = { kills: 0, headshots: 0, explosionKills: 0, roadkills: 0, explosions: 0, time: 0 };
+    if (level === 2) this.mission = new RescueMission(this);
     if (this.weapons) this.resize();
   }
 
@@ -109,20 +121,61 @@ export class Game {
     this.player.alive = false;
     this.dayNight.time = 222;
     this.hud.show(false);
+    // Kayıtlı ilerleme varsa "Devam et" görünür
+    document.getElementById('btn-continue').style.display = loadProgress() ? '' : 'none';
     this.menu.open('menu-main');
   }
 
-  newGame() {
+  // level 2: carry = 1. bölümden taşınan eşya/can
+  newGame(level = 1, carry = null) {
     this.audio.stopEngine();
-    this.buildScene();
+    this.buildScene(level);
     this.state = 'playing';
     this.menu.close();
     this.hud.show(true);
     document.getElementById('fade').classList.remove('show');
-    this.hud.banner('BENZİNİ BUL!', 3);
-    this.hud.toast('Elinde sadece levye ve fener var. Silahlı zombilerden silah al!');
+    if (carry) {
+      this.inventory.restore(carry.inventory);
+      this.player.health = Math.max(60, Math.min(100, carry.health || 100));
+      this.player.armor = Math.max(0, Math.min(100, carry.armor || 0));
+    }
+    if (level === 2) {
+      if (!carry) {
+        // Kayıt yoksa temel eşyalar
+        this.inventory.addWeapon('pistol', 36);
+        this.inventory.select(1);
+      }
+      this.dayNight.time = 250;
+      // Gece zaten başlamış: "gece çöküyor" yazısı bölüm başlığını örtmesin
+      this.wasNight = true;
+      this.spawner.elapsed = 150;
+      this.mission.start();
+      const sedan = this.vehicles.list.find((v) => v.typeKey === 'sedan');
+      this.vehicles.enter(sedan);
+      this.hud.banner('2. BÖLÜM: OKULDAKİ ÇOCUK', 4);
+    } else {
+      this.hud.banner('BENZİNİ BUL!', 3);
+      this.hud.toast('Elinde sadece levye ve fener var. Silahlı zombilerden silah al!');
+    }
     if (this.input.lastDevice !== 'pad') this.input.requestLock();
     this.audio.resume();
+  }
+
+  hitChild(amount, fromPos) {
+    if (this.child) this.child.takeDamage(amount, fromPos);
+  }
+
+  onChildDied() {
+    this.hud.banner('DENİZ ÖLDÜ', 3);
+    this.childDeadTimer = 0;
+  }
+
+  breakBarricade(bar) {
+    if (!bar.alive) return;
+    this.world.removeBarricade(bar);
+    this.audio.play('wood', bar.pos, 1.3);
+    this.particles.emit({ pos: bar.pos.clone(), count: 22, colors: ['#8d6e3f', '#5d4325', '#a1887f'], speed: 5, up: 3, life: 1.2, size: 0.16, gravity: 14 });
+    this.hud.toast('Kapı açıldı!');
   }
 
   pause() {
@@ -145,8 +198,14 @@ export class Game {
   menuAction(action) {
     switch (action) {
       case 'play':
+        this.newGame(1);
+        break;
       case 'restart':
-        this.newGame();
+        this.newGame(this.level, this.level === 2 ? loadProgress() : null);
+        break;
+      case 'next':
+      case 'continue':
+        this.newGame(2, loadProgress());
         break;
       case 'resume':
         this.resume();
@@ -317,9 +376,10 @@ export class Game {
 
   updateInteraction(dt, s) {
     const p = this.player;
-    const car = this.world.car.pos;
-    const nearCar = Math.hypot(p.pos.x - car.x, p.pos.z - car.z) < 3.9;
     this.prompt = null;
+    if (this.mission && this.mission.interaction(s)) return;
+    const car = this.world.car ? this.world.car.pos : null;
+    const nearCar = !!car && Math.hypot(p.pos.x - car.x, p.pos.z - car.z) < 3.9;
     if (nearCar && p.carryingGas) {
       if (s.interact) {
         this.pour += dt / 2;
@@ -395,16 +455,33 @@ export class Game {
     this.input.rumble(0.6, 0.6, 1200);
   }
 
-  showEnd(win) {
+  showEnd(win, reason = null) {
     this.state = 'end';
     this.audio.stopEngine();
     this.input.exitLock();
     this.audio.setPouring(false);
+    this.radio.clear();
     this.hud.show(false);
-    document.getElementById('end-title').textContent = win ? 'KAÇTIN!' : 'ÖLDÜN';
-    document.getElementById('end-sub').textContent = win
-      ? 'Depo doldu, motor çalıştı, zombiler arkada kaldı.'
-      : `Benzin: ${this.gasDelivered} / 5 — zombiler seni yakaladı.`;
+    let title;
+    let sub;
+    if (this.level === 1) {
+      title = win ? 'KAÇTIN!' : 'ÖLDÜN';
+      sub = win ? 'Depo doldu, motor çalıştı, zombiler arkada kaldı.' : `Benzin: ${this.gasDelivered} / 5 — zombiler seni yakaladı.`;
+      // 2. bölüme eşyalarla devam
+      if (win) saveProgress({ level: 2, inventory: this.inventory.serialize(), health: this.player.health, armor: this.player.armor });
+    } else if (win) {
+      title = 'DENİZ KURTARILDI!';
+      sub = 'Kuzey Kontrol Noktası çocuğu teslim aldı. Şimdilik ikiniz de güvendesiniz.';
+    } else if (reason === 'child') {
+      title = 'DENİZ ÖLDÜ';
+      sub = 'Çocuğu koruyamadın. Bir daha dene.';
+    } else {
+      title = 'ÖLDÜN';
+      sub = 'Deniz yalnız kaldı...';
+    }
+    document.getElementById('end-title').textContent = title;
+    document.getElementById('end-sub').textContent = sub;
+    document.getElementById('btn-next').style.display = this.level === 1 && win ? '' : 'none';
     const rows = [
       ['Süre', formatTime(this.stats.time)],
       ['Öldürülen zombi', this.stats.kills],
@@ -454,6 +531,11 @@ export class Game {
     // Araçtan inildiği karede aynı tuş tekrar binmesin
     if (this.player.alive && !driving && !wasDriving) this.updateInteraction(dt, s);
     else if (!driving) this.prompt = null;
+    if (this.mission) {
+      const r = this.mission.update(dt);
+      if (r === 'win') this.showEnd(true);
+    }
+    this.radio.update(dt);
     this.shake = Math.max(0, this.shake - dt * 2.5);
     this.audio.updateMusic(night, true);
     this.hud.update(dt, this);
@@ -510,9 +592,13 @@ export class Game {
         if (menuOpen) break;
         if (s.pause) this.pause();
         else this.tick(dt, s);
-        if (!this.player.alive) {
+        if (this.state === 'playing' && !this.player.alive) {
           this.deathTimer += dt;
           if (this.deathTimer > 2.2) this.showEnd(false);
+        }
+        if (this.state === 'playing' && this.child && !this.child.alive) {
+          this.childDeadTimer += dt;
+          if (this.childDeadTimer > 2.5) this.showEnd(false, 'child');
         }
         break;
       case 'escaping':

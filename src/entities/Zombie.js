@@ -333,6 +333,7 @@ export class ZombieManager {
     const ppos = player.pos;
     const flashOn = player.flashOn && night > 0.5;
     const pf = player.forward();
+    const child = game.child && game.child.targetable ? game.child : null;
 
     for (let i = list.length - 1; i >= 0; i--) {
       const z = list[i];
@@ -346,8 +347,19 @@ export class ZombieManager {
       z.flash = Math.max(0, z.flash - dt);
       z.skinMat.emissive.setRGB(z.flash * 6, z.flash * 6, z.flash * 6);
 
-      const dx = ppos.x - z.pos.x;
-      const dz = ppos.z - z.pos.z;
+      // Hedef: oyuncu ya da (yakınsa) yaya çocuk. Silahlılar hep oyuncuyu hedefler.
+      let tpos = ppos;
+      let targetChild = false;
+      if (child && !z.type.ranged) {
+        const dc = Math.hypot(child.pos.x - z.pos.x, child.pos.z - z.pos.z);
+        const dp = Math.hypot(ppos.x - z.pos.x, ppos.z - z.pos.z);
+        if (dc < dp || !player.alive) {
+          tpos = child.pos;
+          targetChild = true;
+        }
+      }
+      const dx = tpos.x - z.pos.x;
+      const dz = tpos.z - z.pos.z;
       const dist = Math.hypot(dx, dz);
 
       // Algılama: gündüz uzak, gece yakın; fener ışığı zombileri çeker
@@ -403,10 +415,11 @@ export class ZombieManager {
           }
           this.updateShooting(z, dt, dist, los, player);
         }
-        const veh = player.vehicle;
+        const veh = targetChild ? null : player.vehicle;
+        const targetAlive = targetChild ? child.alive : player.alive;
         // Araçtaysa uzaklık aracın gövdesine ölçülür
         const contact = veh ? veh.surfaceDist(z.pos.x, z.pos.z) : dist;
-        if (t.exploder && contact < 2.0 && player.alive && Math.abs(ppos.y - z.pos.y) < 3) {
+        if (t.exploder && contact < 2.0 && targetAlive && Math.abs(tpos.y - z.pos.y) < 3) {
           z.fuse = 0.7;
           game.audio.play('fuse', z.pos);
         }
@@ -414,16 +427,19 @@ export class ZombieManager {
         const reach = z.radius + 0.4 + 0.75 * Math.max(1, z.scale * 0.8);
         z.attackCd -= dt;
         const inReach = veh ? contact < z.radius + 0.7 : dist < reach;
-        const heightOk = Math.abs(ppos.y - z.pos.y) < (veh ? 2.6 : 1.6) * z.scale;
-        if (!t.exploder && inReach && heightOk && player.alive) {
+        const heightOk = Math.abs(tpos.y - z.pos.y) < (veh ? 2.6 : 1.6) * z.scale;
+        if (!t.exploder && inReach && heightOk && targetAlive) {
           speed *= 0.2;
           // İnce duvarın arkasından vuramasın
-          if (z.attackCd <= 0 && (veh || this.collision.lineOfSight(z.pos.x, 1.2 * z.scale, z.pos.z, ppos.x, ppos.y + 1.2, ppos.z))) {
+          const eyeY = targetChild ? 0.8 : tpos.y + 1.2;
+          if (z.attackCd <= 0 && (veh || this.collision.lineOfSight(z.pos.x, 1.2 * z.scale, z.pos.z, tpos.x, eyeY, tpos.z))) {
             z.attackCd = t.attackRate;
             z.attackAnim = 1;
-            game.hitPlayer(t.damage * (1 + night * 0.2), z.pos);
+            const dmg = t.damage * (1 + night * 0.2);
+            if (targetChild) game.hitChild(dmg, z.pos);
+            else game.hitPlayer(dmg, z.pos);
             game.audio.play('bite', z.pos, 1, t.pitch);
-            if (t.knockback && !veh) player.push(dx, dz, t.knockback);
+            if (t.knockback && !veh && !targetChild) player.push(dx, dz, t.knockback);
           }
         }
       } else {

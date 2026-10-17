@@ -65,6 +65,23 @@ export function pickupModel() {
   return { group: g, wheels };
 }
 
+// 1. bölümdeki mavi araba: artık sürülebilir
+export function sedanModel() {
+  const g = new THREE.Group();
+  const wheels = [];
+  const blue = '#1e5aa8';
+  part(g, 2.0, 0.75, 4.4, 0, 0.75, 0, blue);
+  part(g, 1.8, 0.65, 2.2, 0, 1.45, 0.3, blue);
+  part(g, 1.82, 0.5, 0.06, 0, 1.47, -0.8, '#90caf9');
+  part(g, 1.82, 0.45, 0.06, 0, 1.47, 1.42, '#90caf9');
+  for (const [x, z] of [[-0.95, -1.4], [0.95, -1.4], [-0.95, 1.4], [0.95, 1.4]]) wheel(g, x, 0.35, z, 0.35, 0.3, wheels);
+  part(g, 0.4, 0.18, 0.06, -0.6, 0.85, -2.21, headlight());
+  part(g, 0.4, 0.18, 0.06, 0.6, 0.85, -2.21, headlight());
+  part(g, 0.35, 0.15, 0.06, -0.65, 0.9, 2.21, glowMat('#d50000', 0.5));
+  part(g, 0.35, 0.15, 0.06, 0.65, 0.9, 2.21, glowMat('#d50000', 0.5));
+  return { group: g, wheels };
+}
+
 export function tankModel() {
   const g = new THREE.Group();
   const olive = '#4f5a2a';
@@ -147,6 +164,7 @@ export const VEHICLE_MODELS = {
   motorcycle: motorcycleModel,
   jeep: jeepModel,
   pickup: pickupModel,
+  sedan: sedanModel,
   tank: tankModel,
   heli: heliModel,
   plane: planeModel,

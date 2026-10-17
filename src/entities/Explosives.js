@@ -74,6 +74,15 @@ export class Explosives {
       }
     }
     if (g.vehicles) g.vehicles.onExplosion(p, radius, damage, occluded);
+    const child = g.child;
+    if (child && child.targetable) {
+      const c = child.center;
+      const d = c.distanceTo(p);
+      if (d < radius) child.takeDamage(coveredExplosionDamage(d, radius, damage, occluded(c)) * 0.5, p);
+    }
+    for (const bar of g.world.barricades) {
+      if (bar.alive && bar.pos.distanceTo(p) < radius * 0.9) g.breakBarricade(bar);
+    }
     // Zincirleme: variller, TNT, C4, sandıklar
     for (const b of g.world.barrels) {
       if (!b.alive || b.fuse >= 0) continue;
