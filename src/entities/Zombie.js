@@ -352,7 +352,7 @@ export class ZombieManager {
 
       // Algılama: gündüz uzak, gece yakın; fener ışığı zombileri çeker
       if (!z.alerted && player.alive) {
-        let range = 30 - night * 14;
+        let range = 30 - night * 8;
         if (flashOn) {
           const facing = -(pf.x * dx + pf.z * dz) / (dist || 1);
           if (facing > 0.85) range += 22;
@@ -440,7 +440,8 @@ export class ZombieManager {
           mx = wx / wd;
           mz = wz / wd;
         }
-        speed *= 0.3;
+        // Gece dolaşan zombiler daha hareketli
+        speed *= 0.3 + night * 0.2;
       }
 
       // Takılma: duvara sürtünüyorsa bir süre yana kay

@@ -7,6 +7,7 @@ const DEFAULTS = {
   invertY: false,
   vibration: true,
   aimAssist: true,
+  aimToggle: false,
   volume: 0.8,
   music: 0.5,
 };

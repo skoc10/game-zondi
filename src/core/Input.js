@@ -100,8 +100,11 @@ export class Input {
     s.moveX = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0);
     s.moveY = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0);
     // Sağ tık basılıyken nişan: hassasiyet düşer
-    const aimHeld = this.mouseButtons.has(2);
-    const sens = MOUSE_RAD_PER_PX * settings.mouseSens * (aimHeld ? 0.65 : 1);
+    // Aç/kapa ayarında sağ tık her basışta nişanı değiştirir (touchpad için)
+    if (settings.aimToggle && this.mousePressed.has(2)) this.aimToggled = !this.aimToggled;
+    if (!this.locked) this.aimToggled = false;
+    const aimHeld = settings.aimToggle ? !!this.aimToggled : this.mouseButtons.has(2);
+    const sens = MOUSE_RAD_PER_PX * settings.mouseSens * (aimHeld ? 0.5 : 1);
     s.aim = aimHeld;
     s.lookX = this.mouseDX * sens;
     s.lookY = this.mouseDY * sens * (settings.invertY ? -1 : 1);

@@ -1,3 +1,4 @@
+import { buildEngine } from './engines.js';
 import { settings } from '../core/Settings.js';
 
 // Tüm sesler WebAudio ile kodla üretilir (dosya yok).
@@ -298,152 +299,13 @@ export class Sound {
     }
   }
 
-  // Her araç türünün kendi ses grafiği var:
-  // motosiklet vızıltı, cip/pikap gürleme, tank derin uğultu + palet, helikopter rotor, uçak pervane + rüzgâr
   startEngine(kind) {
     this.stopEngine();
     if (!this.ready) {
       this.pendingEngine = kind;
       return;
     }
-    const ctx = this.ctx;
-    const nodes = { kind, stop: [] };
-    const out = ctx.createGain();
-    out.gain.value = 0;
-    out.connect(this.sfx);
-    nodes.out = out;
-    const osc = (type, freq) => {
-      const o = ctx.createOscillator();
-      o.type = type;
-      o.frequency.value = freq;
-      o.start();
-      nodes.stop.push(o);
-      return o;
-    };
-    const noise = () => {
-      const src = ctx.createBufferSource();
-      src.buffer = this.noise;
-      src.loop = true;
-      src.start(0, Math.random());
-      nodes.stop.push(src);
-      return src;
-    };
-    const filter = (type, freq, q = 1) => {
-      const f = ctx.createBiquadFilter();
-      f.type = type;
-      f.frequency.value = freq;
-      f.Q.value = q;
-      return f;
-    };
-    // Genlik modülasyonu: kaynak → am (taban + lfo) → hedef
-    const tremolo = (src, dest, rate, depth, shape = 'sine') => {
-      const am = ctx.createGain();
-      am.gain.value = 1 - depth;
-      const lfo = osc(shape, rate);
-      const lg = ctx.createGain();
-      lg.gain.value = depth;
-      lfo.connect(lg);
-      lg.connect(am.gain);
-      src.connect(am);
-      am.connect(dest);
-      return lfo;
-    };
-    if (kind === 'motorcycle') {
-      const a = osc('square', 90);
-      const b = osc('sawtooth', 91.5);
-      const bp = filter('bandpass', 900, 2.5);
-      const mix = ctx.createGain();
-      mix.gain.value = 0.5;
-      a.connect(mix);
-      b.connect(mix);
-      mix.connect(bp);
-      nodes.lfo = tremolo(bp, out, 40, 0.6, 'square');
-      nodes.set = (rpm, sp) => {
-        const f = 90 + rpm * 240;
-        a.frequency.setTargetAtTime(f, ctx.currentTime, 0.05);
-        b.frequency.setTargetAtTime(f * 1.015, ctx.currentTime, 0.05);
-        bp.frequency.setTargetAtTime(700 + rpm * 1600, ctx.currentTime, 0.05);
-        nodes.lfo.frequency.setTargetAtTime(f / 2, ctx.currentTime, 0.05);
-        return 0.16 + rpm * 0.16;
-      };
-    } else if (kind === 'jeep' || kind === 'pickup') {
-      const base = kind === 'jeep' ? 48 : 42;
-      const a = osc('sawtooth', base);
-      const sub = osc('sine', base / 2);
-      const lp = filter('lowpass', 400, 0.8);
-      a.connect(lp);
-      sub.connect(lp);
-      nodes.lfo = tremolo(lp, out, base / 2, 0.35);
-      nodes.set = (rpm) => {
-        const f = base + rpm * 105;
-        a.frequency.setTargetAtTime(f, ctx.currentTime, 0.06);
-        sub.frequency.setTargetAtTime(f / 2, ctx.currentTime, 0.06);
-        lp.frequency.setTargetAtTime(300 + rpm * 700, ctx.currentTime, 0.08);
-        nodes.lfo.frequency.setTargetAtTime(f / 2, ctx.currentTime, 0.06);
-        return 0.22 + rpm * 0.2;
-      };
-    } else if (kind === 'tank') {
-      const a = osc('sawtooth', 28);
-      const lp = filter('lowpass', 220, 1.2);
-      a.connect(lp);
-      lp.connect(out);
-      // Palet tıkırtısı: hıza bağlı darbeli gürültü
-      const n = noise();
-      const bp = filter('bandpass', 380, 3);
-      n.connect(bp);
-      const tracks = ctx.createGain();
-      tracks.gain.value = 0;
-      nodes.lfo = tremolo(bp, tracks, 4, 0.9, 'square');
-      tracks.connect(out);
-      nodes.set = (rpm, sp) => {
-        a.frequency.setTargetAtTime(28 + rpm * 42, ctx.currentTime, 0.1);
-        nodes.lfo.frequency.setTargetAtTime(3 + sp * 12, ctx.currentTime, 0.1);
-        tracks.gain.setTargetAtTime(Math.min(1, sp * 2.5) * 0.7, ctx.currentTime, 0.1);
-        return 0.3 + rpm * 0.15;
-      };
-    } else if (kind === 'heli') {
-      // Rotor "vop-vop": alçak geçirgen gürültüye kare dalga genlik modülasyonu + türbin vınlaması
-      const n = noise();
-      const lp = filter('lowpass', 420, 1);
-      n.connect(lp);
-      nodes.lfo = tremolo(lp, out, 11, 0.95, 'square');
-      const turbine = osc('sine', 1000);
-      const tg = ctx.createGain();
-      tg.gain.value = 0.04;
-      turbine.connect(tg);
-      tg.connect(out);
-      const thump = osc('sine', 55);
-      const thg = ctx.createGain();
-      thg.gain.value = 0;
-      tremolo(thump, thg, 11, 1, 'square');
-      thg.gain.value = 0.25;
-      thg.connect(out);
-      nodes.set = (rpm) => {
-        nodes.lfo.frequency.setTargetAtTime(9 + rpm * 5, ctx.currentTime, 0.2);
-        turbine.frequency.setTargetAtTime(900 + rpm * 500, ctx.currentTime, 0.2);
-        return 0.35 + rpm * 0.2;
-      };
-    } else {
-      // Uçak: pervane vızıltısı + hızla artan rüzgâr
-      const a = osc('sawtooth', 80);
-      const lp = filter('lowpass', 1200, 0.7);
-      a.connect(lp);
-      nodes.lfo = tremolo(lp, out, 30, 0.5);
-      const n = noise();
-      const hp = filter('highpass', 1500, 0.5);
-      const wind = ctx.createGain();
-      wind.gain.value = 0;
-      n.connect(hp);
-      hp.connect(wind);
-      wind.connect(out);
-      nodes.set = (rpm, sp) => {
-        a.frequency.setTargetAtTime(80 + rpm * 140, ctx.currentTime, 0.1);
-        nodes.lfo.frequency.setTargetAtTime(30 + rpm * 30, ctx.currentTime, 0.1);
-        wind.gain.setTargetAtTime(sp * 0.5, ctx.currentTime, 0.2);
-        return 0.18 + rpm * 0.18;
-      };
-    }
-    this.engine = nodes;
+    this.engine = { kind, ...buildEngine(this.ctx, this.sfx, kind, this.noise) };
   }
 
   // rpm 0..1 (devir), speedFrac 0..1
@@ -451,7 +313,7 @@ export class Sound {
     if (!this.engine && this.pendingEngine && this.ready) this.startEngine(this.pendingEngine);
     const e = this.engine;
     if (!e) return;
-    const vol = e.set(rpm, speedFrac);
+    const vol = e.update(rpm, speedFrac);
     e.out.gain.setTargetAtTime(running ? vol : 0, this.ctx.currentTime, 0.1);
   }
 
@@ -459,7 +321,7 @@ export class Sound {
     this.pendingEngine = null;
     const e = this.engine;
     if (!e) return;
-    for (const n of e.stop) {
+    for (const n of e.nodes) {
       try {
         n.stop();
       } catch {

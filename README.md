@@ -45,6 +45,7 @@ Binmek ve inmek için E tuşu (kolda X / □) kullanılır. Araçtayken kamera a
 - Menüler de kolla gezilebilir.
 - Ekrandaki tuş ipuçları son kullandığın cihaza göre değişir.
 - Ayarlardan şunlar değiştirilebilir: fare ve kol hassasiyeti, Y eksenini ters çevirme, titreşim, nişan yardımı, ses ve müzik.
+- Touchpad kullanıyorsan ayarlardan **"Nişan: sağ tıkla aç/kapa"** seçeneğini aç. Böylece sağ tık bir kez basınca nişan açılır, tekrar basınca kapanır; basılı tutman gerekmez.
 
 ## Oyun içeriği
 

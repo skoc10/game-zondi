@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { WEAPONS, SLOTS, THROWABLES } from './weaponData.js';
 import { WEAPON_MODELS, gasCanModel } from '../world/models.js';
-import { damp, clamp, angleDiff, rand } from '../core/math.js';
+import { damp, clamp, angleDiff } from '../core/math.js';
 import { settings } from '../core/Settings.js';
 
 const HOLD = new THREE.Vector3(0.28, -0.27, -0.55);
@@ -111,7 +111,7 @@ export class WeaponSystem {
       this.startReload(id);
     }
 
-    this.aim = damp(this.aim, s.aim && w.kind === 'hitscan' ? 1 : 0, 12, dt);
+    this.aim = damp(this.aim, s.aim ? 1 : 0, 12, dt);
     if (s.aim || (s.fire && g.input.lastDevice === 'pad')) this.aimAssist(dt, s.aim ? 1 : 0.35);
 
     const ready = this.cooldown <= 0 && this.reloading <= 0 && this.switchAnim <= 0.3 && player.alive;
@@ -208,8 +208,8 @@ export class WeaponSystem {
     this.kick = 1;
     this.flashTime = 0.05;
     const player = g.player;
-    player.pitch += w.recoil * (1 - this.aim * 0.4);
-    player.yaw += rand(-0.3, 0.3) * w.recoil;
+    // Geri tepme sadece görüntüyü sarsar ve kendiliğinden geri döner; nişan yeri kaymaz
+    player.kick += w.recoil * (1 - this.aim * 0.5);
     g.audio.play(w.sound);
     g.input.rumble(id === 'shotgun' || id === 'rocket' ? 0.8 : 0.3, 0.5, id === 'smg' ? 60 : 120);
     g.zombies.alert(player.pos, 35);
@@ -429,10 +429,12 @@ export class WeaponSystem {
     const bob = player.bob;
     const bp = player.bobPhase;
     const h = this.holder;
-    const aimX = this.aim * -0.28;
+    // Silah sadece ateşli silahlarda göz hizasına gelir
+    const gunAim = modelId === 'pistol' || modelId === 'shotgun' || modelId === 'smg' || modelId === 'rocket' ? this.aim : 0;
+    const aimX = gunAim * -0.28;
     h.position.set(
       HOLD.x + aimX + Math.cos(bp) * 0.02 * bob + this.sway.x,
-      HOLD.y + this.aim * 0.1 + Math.abs(Math.sin(bp)) * 0.025 * bob - this.switchAnim * 0.5 + this.sway.y,
+      HOLD.y + gunAim * 0.1 + Math.abs(Math.sin(bp)) * 0.025 * bob - this.switchAnim * 0.5 + this.sway.y,
       HOLD.z + this.kick * 0.09,
     );
     let rx = this.kick * 0.12;

@@ -49,6 +49,7 @@ export class Player {
     this.bob = 0;
     this.hurt = 0;
     this.hurtDir = 0;
+    this.kick = 0;
     this.deathTime = 0;
     this.speed = 0;
     this.lastStep = 0;
@@ -146,7 +147,8 @@ export class Player {
     const sx = (Math.random() - 0.5) * shake * 0.3;
     const sy = (Math.random() - 0.5) * shake * 0.3;
     this.camera.position.set(this.pos.x + rx * bx, this.pos.y + EYE + by, this.pos.z + rz * bx);
-    this.camera.rotation.set(this.pitch + sy * 0.3, this.yaw + sx * 0.3, sx * 0.2, 'YXZ');
+    this.kick = damp(this.kick, 0, 14, dt);
+    this.camera.rotation.set(this.pitch + this.kick + sy * 0.3, this.yaw + sx * 0.3, sx * 0.2, 'YXZ');
 
     this.flashlight.intensity = this.flashOn ? 2 + 70 * night : 0;
     this.hurt = Math.max(0, this.hurt - dt * 1.5);
