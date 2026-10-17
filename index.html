@@ -25,6 +25,7 @@
       <div id="time-label">☀ Gündüz</div>
       <div id="kill-count">☠ 0</div>
       <div id="flashlight-state"></div>
+      <div id="save-hint"></div>
     </div>
 
     <div id="crosshair"><i></i><i></i><i></i><i></i></div>
@@ -87,10 +88,13 @@
   <div id="menu-pause" class="screen">
     <div class="menu-box">
       <h2>DURAKLATILDI</h2>
+      <p class="sub" id="pause-status"></p>
       <div class="menu-item btn primary" data-action="resume">DEVAM ET</div>
+      <div class="menu-item btn" data-action="save">KAYDET (K)</div>
+      <div class="menu-item btn" data-action="load" id="btn-pause-load">SON KAYDA DÖN</div>
       <div class="menu-item btn" data-action="controls-pause">KONTROLLER</div>
       <div class="menu-item btn" data-action="settings-pause">AYARLAR</div>
-      <div class="menu-item btn" data-action="restart">YENİDEN BAŞLA</div>
+      <div class="menu-item btn" data-action="restart">BÖLÜMÜ BAŞTAN OYNA</div>
       <div class="menu-item btn" data-action="quit">ANA MENÜ</div>
     </div>
   </div>
@@ -129,6 +133,7 @@
           <tr><td>Eşya seç</td><td>1–8, tekerlek, Q</td><td>RB / LB</td></tr>
           <tr><td>C4 patlat</td><td>G (C4 eldeyken sağ tık)</td><td>D-pad ▲</td></tr>
           <tr><td>Duraklat</td><td>Esc, P</td><td>Start / Options</td></tr>
+          <tr><td>Kaydet</td><td>K</td><td>Back / View · Share / Create</td></tr>
           <tr><th colspan="3">Araçlar (binmek / inmek: E · X / □)</th></tr>
           <tr><td>Kara aracı</td><td>W/S gaz-geri, A/D, Space el freni</td><td>RT gaz, LT fren, sol çubuk</td></tr>
           <tr><td>Tank topu</td><td>Sol tık (fareyle nişan)</td><td>RB (sağ çubukla nişan)</td></tr>
@@ -142,6 +147,7 @@
           <li>Kırmızı variller vurulunca patlar ve birbirini tetikler.</li>
           <li>Patlayan zombiyi kafasından vurursan yerinde patlar. Gövdesinden öldürürsen kafası düşer: al ve fırlat!</li>
           <li>Gece zombiler artar ve fenerin ışığına gelir.</li>
+          <li>İstediğin yerde K ile kaydet. Ölürsen "KAYITTAN DEVAM" ile kaydettiğin yerden doğarsın. Bölüm başında otomatik kayıt alınır.</li>
           <li>Araçla zombileri ezebilirsin. Yakıt biterse benzinlik pompasında ya da askeri üsteki depoda dur, dolar.</li>
           <li>Askeri üste tank, helikopter ve uçak var.</li>
         </ul>
@@ -156,7 +162,8 @@
       <p class="sub" id="end-sub"></p>
       <div id="end-stats"></div>
       <div class="menu-item btn primary" data-action="next" id="btn-next" style="display:none">2. BÖLÜME DEVAM</div>
-      <div class="menu-item btn" data-action="restart">YENİDEN OYNA</div>
+      <div class="menu-item btn primary" data-action="load" id="btn-load" style="display:none">KAYITTAN DEVAM</div>
+      <div class="menu-item btn" data-action="restart">BÖLÜMÜ BAŞTAN OYNA</div>
       <div class="menu-item btn" data-action="quit">ANA MENÜ</div>
     </div>
   </div>

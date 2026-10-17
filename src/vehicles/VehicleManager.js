@@ -281,19 +281,26 @@ export class VehicleManager {
       c.leaveVehicle(v);
       c.takeDamage(30, null);
     }
+    st.y = ground;
+    this.wreck(v);
+    g.hud.toast(`${v.spec.name} patladı!`);
+    g.explosives.explode(blast, 6, 140, { source: 'vehicle' });
+  }
+
+  // Yanmış enkaz görünümü (patlama ya da kayıttan yükleme)
+  wreck(v) {
+    const st = v.state;
+    v.alive = false;
     this.unpark(v);
     v.body.traverse((o) => {
       if (o.isMesh) o.material = WRECK;
     });
     v.avatar.visible = false;
-    st.y = ground;
     st.pitch = 0;
     st.roll = 0.15;
     st.speed = 0;
     v.syncMesh();
     this.park(v);
-    g.hud.toast(`${v.spec.name} patladı!`);
-    g.explosives.explode(blast, 6, 140, { source: 'vehicle' });
   }
 
   onExplosion(p, radius, damage, occluded) {

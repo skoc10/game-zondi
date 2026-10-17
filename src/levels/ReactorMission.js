@@ -137,6 +137,28 @@ export class ReactorMission {
     return false;
   }
 
+  saveBlock() {
+    if (this.planted) return 'Bomba kurulduktan sonra kaydedilemez — KAÇ!';
+    return null;
+  }
+
+  saveState() {
+    return { said: [...this.said] };
+  }
+
+  restoreState(d) {
+    const g = this.game;
+    this.said = new Set(d.said || []);
+    this.boss = g.zombies.list.find((z) => z.typeKey === 'drKaos') || null;
+    if (this.boss) {
+      this.bossFrac = this.boss.health / this.boss.maxHealth;
+    } else {
+      // Dr. Kaos ölmüştü: reaktör kapısı açık
+      this.bossDeadHandled = true;
+      openReactorDoor(g.world);
+    }
+  }
+
   plant() {
     const g = this.game;
     this.planted = true;

@@ -82,7 +82,7 @@ export class Input {
       moveX: 0, moveY: 0, lookX: 0, lookY: 0,
       fire: false, firePressed: false, aim: false, sprint: false,
       interact: false, interactPressed: false,
-      jump: false, reload: false, flashlight: false,
+      jump: false, reload: false, flashlight: false, save: false,
       next: false, prev: false, slot: -1, detonate: false, pause: false,
       menuUp: false, menuDown: false, menuLeft: false, menuRight: false,
       confirm: false, back: false,
@@ -130,6 +130,7 @@ export class Input {
     s.jump = kp.has('Space');
     s.reload = kp.has('KeyR');
     s.flashlight = kp.has('KeyF');
+    s.save = kp.has('KeyK');
     s.detonate = kp.has('KeyG');
     s.pause = kp.has('Escape') || kp.has('KeyP');
     s.next = this.wheel > 0 || kp.has('KeyQ');
@@ -172,6 +173,7 @@ export class Input {
       s.jump = s.jump || this.padPressed(BTN.A);
       s.reload = s.reload || this.padPressed(BTN.B);
       s.flashlight = s.flashlight || this.padPressed(BTN.Y);
+      s.save = s.save || this.padPressed(BTN.BACK);
       s.next = s.next || this.padPressed(BTN.RB);
       s.prev = s.prev || this.padPressed(BTN.LB);
       s.detonate = s.detonate || this.padPressed(BTN.UP);

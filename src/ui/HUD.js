@@ -18,7 +18,7 @@ export class HUD {
       time: $('time-label'), kills: $('kill-count'),
       prompt: $('prompt'), promptKey: $('prompt-key'), promptText: $('prompt-text'), promptBar: $('prompt-bar'),
       compass: $('compass-strip'), toasts: $('toasts'), hurt: $('hurt'), hurtDir: $('hurt-dir'),
-      crosshair: $('crosshair'), hitmarker: $('hitmarker'), banner: $('banner'), flash: $('flashlight-state'),
+      crosshair: $('crosshair'), hitmarker: $('hitmarker'), banner: $('banner'), flash: $('flashlight-state'), saveHint: $('save-hint'),
       lowhp: $('lowhp'),
       gasRow: $('gas-row'), childRows: $('child-rows'),
       vPanel: $('vehicle-panel'), vName: $('veh-name'), vSpeed: $('veh-speed'), vFuel: $('veh-fuel'),
@@ -69,6 +69,12 @@ export class HUD {
     this.el.banner.textContent = text;
     this.el.banner.classList.add('show');
     this.bannerTimer = seconds;
+  }
+
+  // Kayıt alınınca ipucu kısa süre parlar
+  flashSave() {
+    this.el.saveHint.classList.add('saved');
+    this.saveTimer = 1.6;
   }
 
   hitMarker(kill) {
@@ -176,6 +182,10 @@ export class HUD {
     this.set('time', this.el.time, 'textContent', `${info.icon} ${info.label} · ${formatTime(info.remaining)}`);
     this.set('kills', this.el.kills, 'textContent', `☠ ${g.stats.kills}`);
     this.set('fl', this.el.flash, 'textContent', p.flashOn ? `Fener: AÇIK [${glyph('flashlight', dev, ps)}]` : `Fener: KAPALI [${glyph('flashlight', dev, ps)}]`);
+
+    this.saveTimer = (this.saveTimer || 0) - dt;
+    if (this.saveTimer <= 0) this.el.saveHint.classList.remove('saved');
+    this.set('sv', this.el.saveHint, 'textContent', this.saveTimer > 0 ? 'Kaydedildi ✓' : `Kaydet [${glyph('save', dev, ps)}]`);
 
     // Etkileşim ipucu
     const pr = g.prompt;

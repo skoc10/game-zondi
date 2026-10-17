@@ -27,6 +27,7 @@ import { LaunchMission } from '../levels/LaunchMission.js';
 import { StationMission } from '../levels/StationMission.js';
 import { loadProgress, saveProgress, LAST_LEVEL, LEVEL_SELECT_UNLOCKED } from './Progress.js';
 import { applyLoadout } from '../levels/loadouts.js';
+import { loadSave, writeSave, clearSave, saveMatches, saveBlockReason, captureSave, applySave } from './SaveGame.js';
 import { randInt, chance, pickWeighted, rand, formatTime } from './math.js';
 
 export class Game {
@@ -142,10 +143,12 @@ export class Game {
     this.dayNight.time = 222;
     this.hud.show(false);
     // Kayıtlı ilerleme varsa "Devam et" görünür
-    const prog = loadProgress();
+    // Bölüm içi kayıt varsa ondan, yoksa bölüm ilerlemesinden devam
+    const save = loadSave();
+    const prog = save || loadProgress();
     const cont = document.getElementById('btn-continue');
     cont.style.display = prog ? '' : 'none';
-    if (prog) cont.textContent = `DEVAM ET: ${prog.level}. BÖLÜM${prog.sub === 'space' ? ' (UZAY)' : ''}`;
+    if (prog) cont.textContent = `DEVAM ET: ${prog.level}. BÖLÜM${prog.sub === 'space' ? ' (UZAY)' : ''}${save ? ' · KAYIT' : ''}`;
     document.getElementById('btn-levels').style.display = LEVEL_SELECT_UNLOCKED ? '' : 'none';
     this.menu.open('menu-main');
   }
@@ -171,8 +174,42 @@ export class Game {
       this.hud.banner('BENZİNİ BUL!', 3);
       this.hud.toast('Elinde sadece levye ve fener var. Silahlı zombilerden silah al!');
     }
+    // Bölüm başında otomatik kayıt: ölünce en azından buradan devam edilir
+    writeSave(captureSave(this));
     if (this.input.lastDevice !== 'pad') this.input.requestLock();
     this.audio.resume();
+  }
+
+  // Kayıttan devam: sahne baştan kurulur, kayıttaki durum yüklenir
+  loadGame(save) {
+    this.audio.stopEngine();
+    this.buildScene(save.level, save.sub || null);
+    this.state = 'playing';
+    this.menu.close();
+    this.hud.show(true);
+    document.getElementById('fade').classList.remove('show');
+    applySave(this, save);
+    this.hud.banner('KAYITTAN DEVAM', 2.5);
+    if (this.input.lastDevice !== 'pad') this.input.requestLock();
+    this.audio.resume();
+  }
+
+  // İstenen yerde kayıt (K / kolda Back-Select)
+  saveGame() {
+    const reason = saveBlockReason(this);
+    if (reason) {
+      this.hud.toast(reason);
+      this.audio.play('empty');
+      return false;
+    }
+    if (!writeSave(captureSave(this))) {
+      this.hud.toast('Kaydedilemedi (tarayıcı depolaması kapalı)');
+      return false;
+    }
+    this.hud.toast('Oyun kaydedildi ✓');
+    this.hud.flashSave();
+    this.audio.play('pickup');
+    return true;
   }
 
   hitChild(amount, fromPos, child) {
@@ -214,6 +251,8 @@ export class Game {
     this.audio.setPouring(false);
     this.input.exitLock();
     this.menuReturn = 'menu-pause';
+    document.getElementById('pause-status').textContent = '';
+    document.getElementById('btn-pause-load').style.display = saveMatches(loadSave(), this.level, this.sub) ? '' : 'none';
     this.menu.open('menu-pause');
   }
 
@@ -236,12 +275,35 @@ export class Game {
         this.newGame(this.level, same ? prog : null, this.sub);
         break;
       }
-      case 'next':
       case 'continue': {
+        const save = loadSave();
+        if (save) {
+          this.loadGame(save);
+          break;
+        }
         const prog = loadProgress();
         if (prog) this.newGame(prog.level, prog, prog.sub || null);
         break;
       }
+      case 'next': {
+        const prog = loadProgress();
+        if (prog) this.newGame(prog.level, prog, prog.sub || null);
+        break;
+      }
+      case 'load': {
+        const save = loadSave();
+        if (save) this.loadGame(save);
+        break;
+      }
+      case 'save':
+        if (this.state === 'paused') {
+          this.state = 'playing';
+          const ok = this.saveGame();
+          this.state = 'paused';
+          if (ok) this.resume();
+          else document.getElementById('pause-status').textContent = saveBlockReason({ ...this, state: 'playing' }) || 'Kaydedilemedi';
+        }
+        break;
       case 'levels':
         this.menuReturn = 'menu-main';
         this.menu.open('menu-levels', 'back');
@@ -524,6 +586,11 @@ export class Game {
       sub = win ? 'Depo doldu, motor çalıştı, zombiler arkada kaldı.' : `Benzin: ${this.gasDelivered} / ${GAS_REQUIRED} — zombiler seni yakaladı.`;
     }
     const hasNext = win && this.level < LAST_LEVEL;
+    // Kazanınca bölüm içi kayıt silinir; kaybedince kayıttan dönülebilir
+    if (win) clearSave();
+    const save = win ? null : loadSave();
+    const load = document.getElementById('btn-load');
+    load.style.display = saveMatches(save, this.level, this.sub) ? '' : 'none';
     // Sonraki bölüme eşyalarla devam
     if (hasNext) saveProgress({ level: this.level + 1, inventory: this.inventory.serialize(), health: this.player.health, armor: this.player.armor });
     document.getElementById('end-title').textContent = title;
@@ -559,6 +626,7 @@ export class Game {
       this.nights++;
       this.hud.banner('ŞAFAK SÖKTÜ', 3);
     }
+    if (s.save) this.saveGame();
     if (s.flashlight && this.player.alive) {
       this.player.flashOn = !this.player.flashOn;
       this.audio.play('empty');

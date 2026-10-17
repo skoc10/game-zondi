@@ -48,7 +48,9 @@ export class StationMission {
         const z = rand(r.z - r.d / 2 + 2.5, r.z - (i === 0 ? 1 : -r.d / 4));
         if (g.collision.blockedAt(x, z, 0.8, 2)) continue;
         if (Math.hypot(x - g.player.pos.x, z - g.player.pos.z) < 8) continue;
-        list.push(g.zombies.spawn(type, x, z, { alerted: i > 0 }));
+        const zb = g.zombies.spawn(type, x, z, { alerted: i > 0 });
+        zb.tag = 'room' + i;
+        list.push(zb);
         made++;
       }
     };
@@ -60,6 +62,7 @@ export class StationMission {
   spawnQueen() {
     const g = this.game;
     this.queen = g.zombies.spawn('alienQueen', QUEEN_POS.x, QUEEN_POS.z, {});
+    this.queen.tag = 'queen';
     this.queen.shielded = true;
     this.groups[this.groups.length - 1].push(this.queen);
     this.spawnCrystals(1);
@@ -111,6 +114,34 @@ export class StationMission {
     // En yakın canlı uzaylı ya da bölme merkezi
     const r = STATION.rooms[this.room];
     return [{ key: 'room-' + this.room, x: r.x, z: r.z, label: r.name.toLocaleUpperCase('tr-TR'), cls: 'gas' }];
+  }
+
+  saveBlock() {
+    return this.queenDead ? 'Şu an kaydedilemez' : null;
+  }
+
+  saveState() {
+    return { room: this.room, phase: this.phase, said: [...this.said] };
+  }
+
+  restoreState(d) {
+    const g = this.game;
+    g.player.gravity = SPACE_GRAVITY;
+    g.explosives.gravity = SPACE_THROW_GRAVITY;
+    this.room = Math.max(0, Math.min(STATION.rooms.length - 1, d.room || 0));
+    this.phase = d.phase || 1;
+    this.said = new Set(d.said || []);
+    const done = { alive: false };
+    this.groups = STATION.rooms.map((r, i) => {
+      if (i < this.room) {
+        g.world.openForceField(i);
+        return [done];
+      }
+      const list = g.zombies.list.filter((z) => z.tag === 'room' + i || (i === STATION.rooms.length - 1 && z.tag === 'queen'));
+      return list.length || i > this.room ? list : [done];
+    });
+    this.queen = g.zombies.list.find((z) => z.tag === 'queen') || null;
+    if (this.room === STATION.rooms.length - 1 && !this.queen) this.spawnQueen();
   }
 
   interaction() {
@@ -186,7 +217,7 @@ export class StationMission {
       const x = q.pos.x + Math.sin(a) * 9;
       const z = q.pos.z + Math.cos(a) * 9;
       if (Math.abs(x) > 17 || z > -126 || z < -158 || g.collision.blockedAt(x, z, 0.7, 2)) continue;
-      g.zombies.spawn(i < n ? 'alien' : 'alienDrone', x, z, { alerted: true });
+      g.zombies.spawn(i < n ? 'alien' : 'alienDrone', x, z, { alerted: true }).tag = 'summon';
     }
   }
 

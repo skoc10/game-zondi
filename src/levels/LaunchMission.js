@@ -117,6 +117,26 @@ export class LaunchMission {
     return false;
   }
 
+  saveBlock() {
+    if (this.stage === 'defend') return 'Sayım sırasında kaydedilemez — konsolu koru!';
+    if (this.boarded) return 'Şu an kaydedilemez';
+    return null;
+  }
+
+  saveState() {
+    return { started: this.started, defendLeft: this.defendLeft, consoleHp: this.console.hp, said: [...this.said] };
+  }
+
+  restoreState(d) {
+    const g = this.game;
+    g.spawner.boost = 2;
+    this.started = !!d.started;
+    this.defendLeft = Number.isFinite(d.defendLeft) ? d.defendLeft : DEFEND_TIME;
+    this.console.hp = Number.isFinite(d.consoleHp) ? d.consoleHp : CONSOLE_HP;
+    this.console.targetable = this.stage === 'defend';
+    this.said = new Set(d.said || []);
+  }
+
   startDefense() {
     const g = this.game;
     this.started = true;

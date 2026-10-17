@@ -113,6 +113,43 @@ export class RescueMission {
     this.game.radio.say(from, text, sec);
   }
 
+  saveBlock() {
+    return this.finished ? 'Şu an kaydedilemez' : null;
+  }
+
+  saveState() {
+    return {
+      time: this.time,
+      said: [...this.said],
+      kids: this.children.map((c) => ({ state: c.state, health: c.health, rescuedAt: c.rescuedAt })),
+    };
+  }
+
+  // Kayıttan dönüş: takip eden ya da araçtaki çocuklar oyuncunun yanında başlar
+  restoreState(d) {
+    const p = this.game.player.pos;
+    this.time = d.time || 0;
+    this.said = new Set(d.said || []);
+    (d.kids || []).forEach((s, i) => {
+      const c = this.children[i];
+      if (!c || !s) return;
+      c.health = Math.max(1, Math.min(c.maxHealth, s.health || c.maxHealth));
+      c.rescuedAt = s.rescuedAt || 0;
+      if (s.state === 'safe') {
+        c.state = 'safe';
+        c.pos.set(SAFE_ZONE.flareX + 7 + i * 1.2, 0, SAFE_ZONE.flareZ + 3);
+        c.yaw = Math.PI;
+        c.animate(0, 0);
+      } else if (s.state === 'following' || s.state === 'inVehicle') {
+        const a = (i / 3) * Math.PI * 2;
+        c.pos.set(p.x + Math.sin(a) * 1.6, 0, p.z + Math.cos(a) * 1.6);
+        c.lastPos.copy(c.pos);
+        c.follow();
+      }
+      c.mesh.position.copy(c.pos);
+    });
+  }
+
   // Oyuncu etkileşimi: döner true ise bu karede ipucu ayarlandı
   interaction(s) {
     const g = this.game;

@@ -23,6 +23,8 @@ Gece, deposu boş bir arabanın yanında doğuyorsun. Elinde sadece **fener** ve
    - Her bölme temizlenince enerji kapısı açılır. Çekirdek odasındaki **Uzaylı Kraliçe** üç aşamalı: pembe kristaller kalkanını besler.
    - Kraliçe ölünce **DÜNYA KURTARILDI!**
 
+**Kayıt:** Bölüm içinde istediğin yerde **K** (kolda Back / Share) ya da duraklat menüsündeki **KAYDET** ile kaydedebilirsin. Ölürsen **KAYITTAN DEVAM** ile kaydettiğin yerden doğarsın: konumun, eşyaların, zombiler, araçlar, kırdığın kapılar ve kurtardığın çocuklar kayıttaki gibi gelir (can en az 50). Her bölümün başında otomatik kayıt alınır. Bomba geri sayımında, konsol savunmasında ve havadayken kaydedilemez.
+
 İlerleme tarayıcıda kaydedilir. Bölüm sonundaki **"N. BÖLÜME DEVAM"** ya da ana menüdeki **"DEVAM ET"** ile eşyalarınla sonraki bölüme geçersin.
 
 > **Geçici test ayarları:** Ana menüdeki **BÖLÜM SEÇ** ile her bölüm (ve doğrudan uzay istasyonu) hazır eşyalarla başlatılabilir (`LEVEL_SELECT_UNLOCKED`, `src/core/Progress.js`). 1. bölümde tek benzin bidonu yeterli (`GAS_REQUIRED`, `src/world/World.js`). Testler bitince bölümler sırayla açılacak ve benzin 5'e dönecek.
@@ -52,6 +54,7 @@ npm test         # birim testleri (vitest)
 | Eşya seç | 1–8, tekerlek, Q | RB / LB |
 | C4 patlat | G (C4 eldeyken sağ tık) | D-pad ▲ |
 | Duraklat | Esc, P | Start / Options |
+| Kaydet | K | Back / View · Share / Create |
 
 ### Araçlar
 
