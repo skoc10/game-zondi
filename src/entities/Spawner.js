@@ -50,6 +50,8 @@ export class Spawner {
       if (Math.abs(x) > MAP_HALF - 2 || Math.abs(z) > MAP_HALF - 2) continue;
       if (Math.hypot(x - CAR_POS.x, z - CAR_POS.z) < 10) continue;
       if (this.collision.blockedAt(x, z, 0.8, 2)) continue;
+      // Kalabalık noktaya doğurma
+      if (this.zombies.countNear(x, z, 20) > 3) continue;
       return { x, z };
     }
     return null;
@@ -60,13 +62,12 @@ export class Spawner {
     if (!spot) return null;
     const nearBase = Math.hypot(player.pos.x - BASE.x, player.pos.z - BASE.z) < BASE.half + 60;
     const type = typeKey || pickWeighted(this.typeWeights(night, nearBase));
-    const opts = { alerted: night > 0.5 ? chance(0.7) : chance(0.15) };
+    const wantAlert = night > 0.5 ? chance(0.7) : chance(0.15);
+    const opts = { alerted: wantAlert && this.zombies.canChase(), spawned: true };
     if (type === 'gunner') opts.weapon = this.gunnerWeapon();
     if (type === 'soldier') opts.weapon = this.soldierWeapon();
-    if (type === 'small' && chance(0.5)) {
-      // Küçükler sürü halinde
-      for (let i = 0; i < 2; i++) this.zombies.spawn('small', spot.x + rand(-2, 2), spot.z + rand(-2, 2), opts);
-    }
+    // Küçükler ikili gelir
+    if (type === 'small' && chance(0.5)) this.zombies.spawn('small', spot.x + rand(-2, 2), spot.z + rand(-2, 2), opts);
     return this.zombies.spawn(type, spot.x, spot.z, opts);
   }
 
@@ -92,7 +93,7 @@ export class Spawner {
       [VILLAGE.x + 8, VILLAGE.z - 10, 'small'], [VILLAGE.x - 30, VILLAGE.z + 10, 'exploder'], [VILLAGE.x - 15, VILLAGE.z - 30, 'normal'],
       [4, BARRICADE_Z - 6, 'normal'], [-6, BARRICADE_Z + 10, 'soldier'], [10, BARRICADE_Z + 12, 'normal'],
       [bx - 30, bz, 'soldier'], [bx, bz - 20, 'soldier'], [bx + 20, bz + 10, 'soldier'], [bx + 10, bz + 30, 'armored'],
-      [bx - 20, bz + 30, 'normal'], [bx + 30, bz - 30, 'soldier'], [bx - 35, bz - 35, 'armored'], [bx + 5, bz + 5, 'big'],
+      [bx - 20, bz + 30, 'normal'], [bx + 5, bz + 5, 'big'],
       [120, -80, 'normal'], [170, -80, 'normal'], [-60, 150, 'normal'], [-120, -120, 'normal'], [150, 100, 'normal'],
     );
     for (const [x, zz, type] of spots) {
@@ -106,12 +107,20 @@ export class Spawner {
   update(dt, player, night) {
     this.elapsed += dt;
     this.timer -= dt;
+    this.zombies.chaseCap = night > 0.5 ? 16 : 10;
+    // Uzakta kalmış, doğurucunun getirdiği zombileri temizle
+    this.cleanupTimer = (this.cleanupTimer || 0) - dt;
+    if (this.cleanupTimer <= 0) {
+      this.cleanupTimer = 2;
+      this.zombies.despawnFar(player.pos, 160);
+    }
     if (this.timer > 0 || !player.alive) return;
     const difficulty = Math.min(1, this.elapsed / 600);
-    const maxAlive = Math.min(42, Math.round((12 + difficulty * 14) * (1 + night * 0.7)));
-    const interval = (night > 0.5 ? 1.3 : 3.2) * (1 - difficulty * 0.45);
+    // Sınır sadece oyuncunun çevresindeki zombileri sayar
+    const maxNear = Math.min(28, Math.round((8 + difficulty * 8) * (1 + night * 0.6)));
+    const interval = (night > 0.5 ? 1.6 : 3.5) * (1 - difficulty * 0.4);
     this.timer = interval * rand(0.7, 1.3);
-    if (this.zombies.aliveCount >= maxAlive) return;
+    if (this.zombies.countNear(player.pos.x, player.pos.z, 90) >= maxNear) return;
     // İlk silahlı zombiyi garanti et
     if (!this.firstGunner && this.elapsed > 30) {
       this.firstGunner = true;

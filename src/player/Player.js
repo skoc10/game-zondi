@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { clamp, damp } from '../core/math.js';
-import { applyPlayerDamage } from '../core/combat.js';
+import { applyPlayerDamage, PLAYER_TOUGHNESS } from '../core/combat.js';
 import { MAP_HALF, PLAYER_START } from '../world/World.js';
 
 const EYE = 1.65;
@@ -154,6 +154,7 @@ export class Player {
 
   takeDamage(amount, fromPos = null) {
     if (!this.alive || amount <= 0) return;
+    amount /= PLAYER_TOUGHNESS;
     const r = applyPlayerDamage(this.health, this.armor, amount);
     this.health = r.health;
     this.armor = r.armor;

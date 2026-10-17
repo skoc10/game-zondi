@@ -73,7 +73,7 @@ export function rumble(gp, strong, weak, ms) {
 const GLYPHS = {
   xbox: { interact: 'X', fire: 'RT', reload: 'B', jump: 'A', flashlight: 'Y', detonate: '▲ D-pad', pause: 'Start' },
   ps: { interact: '□', fire: 'R2', reload: '○', jump: '✕', flashlight: '△', detonate: '▲ D-pad', pause: 'Options' },
-  kbm: { interact: 'E', fire: 'Sol Tık', reload: 'R', jump: 'Space', flashlight: 'F', detonate: 'Sağ Tık', pause: 'Esc' },
+  kbm: { interact: 'E', fire: 'Sol Tık', reload: 'R', jump: 'Space', flashlight: 'F', detonate: 'G', pause: 'Esc' },
 };
 
 export function glyph(action, device, ps = false) {

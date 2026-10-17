@@ -235,6 +235,43 @@ export class Sound {
         lfo.stop(t + 1.05);
         break;
       }
+      case 'roar': {
+        // Fark etme kükremesi: hızla yükselip düşen hırıltılı çığlık
+        const t = this.ctx.currentTime;
+        const o = this.ctx.createOscillator();
+        o.type = 'sawtooth';
+        const f0 = (120 + Math.random() * 40) * pitch;
+        o.frequency.setValueAtTime(f0, t);
+        o.frequency.exponentialRampToValueAtTime(f0 * 2.2, t + 0.18);
+        o.frequency.exponentialRampToValueAtTime(f0 * 0.8, t + 0.8);
+        const lfo = this.ctx.createOscillator();
+        lfo.frequency.value = 28;
+        const lg = this.ctx.createGain();
+        lg.gain.value = 25 * pitch;
+        lfo.connect(lg);
+        lg.connect(o.frequency);
+        const f = this.ctx.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.value = 900 * pitch;
+        f.Q.value = 1.2;
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.8, t + 0.06);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+        o.connect(f);
+        f.connect(g);
+        g.connect(d);
+        o.start(t);
+        lfo.start(t);
+        o.stop(t + 0.95);
+        lfo.stop(t + 0.95);
+        this.noiseBurst(d, { dur: 0.6, type: 'bandpass', freq: 1400 * pitch, q: 1.5, vol: 0.35, attack: 0.03 });
+        break;
+      }
+      case 'bite':
+        this.noiseBurst(d, { dur: 0.22, type: 'bandpass', freq: 500 * pitch, q: 2, vol: 0.8 });
+        this.tone(d, { type: 'sawtooth', freq: 90 * pitch, freqEnd: 60 * pitch, dur: 0.25, vol: 0.4 });
+        break;
       case 'engine': {
         const t = this.ctx.currentTime;
         const o = this.ctx.createOscillator();
@@ -261,78 +298,175 @@ export class Sound {
     }
   }
 
-  // Araç motoru: tür başına taban frekans; helikopter/uçakta pervane vuruşu
+  // Her araç türünün kendi ses grafiği var:
+  // motosiklet vızıltı, cip/pikap gürleme, tank derin uğultu + palet, helikopter rotor, uçak pervane + rüzgâr
   startEngine(kind) {
     this.stopEngine();
     if (!this.ready) {
       this.pendingEngine = kind;
       return;
     }
-    const base = { motorcycle: 75, jeep: 48, pickup: 42, tank: 30, heli: 38, plane: 62 }[kind] || 45;
     const ctx = this.ctx;
-    const osc = ctx.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.value = base;
-    const f = ctx.createBiquadFilter();
-    f.type = 'lowpass';
-    f.frequency.value = 420;
-    const g = ctx.createGain();
-    g.gain.value = 0;
-    osc.connect(f);
-    f.connect(g);
-    g.connect(this.sfx);
-    osc.start();
-    const nodes = { osc, f, g, base, kind };
-    if (kind === 'heli' || kind === 'plane') {
-      // Pervane: gürültü + genlik modülasyonu
+    const nodes = { kind, stop: [] };
+    const out = ctx.createGain();
+    out.gain.value = 0;
+    out.connect(this.sfx);
+    nodes.out = out;
+    const osc = (type, freq) => {
+      const o = ctx.createOscillator();
+      o.type = type;
+      o.frequency.value = freq;
+      o.start();
+      nodes.stop.push(o);
+      return o;
+    };
+    const noise = () => {
       const src = ctx.createBufferSource();
       src.buffer = this.noise;
       src.loop = true;
-      const nf = ctx.createBiquadFilter();
-      nf.type = 'lowpass';
-      nf.frequency.value = kind === 'heli' ? 500 : 900;
+      src.start(0, Math.random());
+      nodes.stop.push(src);
+      return src;
+    };
+    const filter = (type, freq, q = 1) => {
+      const f = ctx.createBiquadFilter();
+      f.type = type;
+      f.frequency.value = freq;
+      f.Q.value = q;
+      return f;
+    };
+    // Genlik modülasyonu: kaynak → am (taban + lfo) → hedef
+    const tremolo = (src, dest, rate, depth, shape = 'sine') => {
       const am = ctx.createGain();
-      am.gain.value = 0.25;
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = kind === 'heli' ? 11 : 30;
+      am.gain.value = 1 - depth;
+      const lfo = osc(shape, rate);
       const lg = ctx.createGain();
-      lg.gain.value = 0.25;
+      lg.gain.value = depth;
       lfo.connect(lg);
       lg.connect(am.gain);
-      src.connect(nf);
-      nf.connect(am);
-      am.connect(g);
-      src.start();
-      lfo.start();
-      nodes.src = src;
-      nodes.lfo = lfo;
+      src.connect(am);
+      am.connect(dest);
+      return lfo;
+    };
+    if (kind === 'motorcycle') {
+      const a = osc('square', 90);
+      const b = osc('sawtooth', 91.5);
+      const bp = filter('bandpass', 900, 2.5);
+      const mix = ctx.createGain();
+      mix.gain.value = 0.5;
+      a.connect(mix);
+      b.connect(mix);
+      mix.connect(bp);
+      nodes.lfo = tremolo(bp, out, 40, 0.6, 'square');
+      nodes.set = (rpm, sp) => {
+        const f = 90 + rpm * 240;
+        a.frequency.setTargetAtTime(f, ctx.currentTime, 0.05);
+        b.frequency.setTargetAtTime(f * 1.015, ctx.currentTime, 0.05);
+        bp.frequency.setTargetAtTime(700 + rpm * 1600, ctx.currentTime, 0.05);
+        nodes.lfo.frequency.setTargetAtTime(f / 2, ctx.currentTime, 0.05);
+        return 0.16 + rpm * 0.16;
+      };
+    } else if (kind === 'jeep' || kind === 'pickup') {
+      const base = kind === 'jeep' ? 48 : 42;
+      const a = osc('sawtooth', base);
+      const sub = osc('sine', base / 2);
+      const lp = filter('lowpass', 400, 0.8);
+      a.connect(lp);
+      sub.connect(lp);
+      nodes.lfo = tremolo(lp, out, base / 2, 0.35);
+      nodes.set = (rpm) => {
+        const f = base + rpm * 105;
+        a.frequency.setTargetAtTime(f, ctx.currentTime, 0.06);
+        sub.frequency.setTargetAtTime(f / 2, ctx.currentTime, 0.06);
+        lp.frequency.setTargetAtTime(300 + rpm * 700, ctx.currentTime, 0.08);
+        nodes.lfo.frequency.setTargetAtTime(f / 2, ctx.currentTime, 0.06);
+        return 0.22 + rpm * 0.2;
+      };
+    } else if (kind === 'tank') {
+      const a = osc('sawtooth', 28);
+      const lp = filter('lowpass', 220, 1.2);
+      a.connect(lp);
+      lp.connect(out);
+      // Palet tıkırtısı: hıza bağlı darbeli gürültü
+      const n = noise();
+      const bp = filter('bandpass', 380, 3);
+      n.connect(bp);
+      const tracks = ctx.createGain();
+      tracks.gain.value = 0;
+      nodes.lfo = tremolo(bp, tracks, 4, 0.9, 'square');
+      tracks.connect(out);
+      nodes.set = (rpm, sp) => {
+        a.frequency.setTargetAtTime(28 + rpm * 42, ctx.currentTime, 0.1);
+        nodes.lfo.frequency.setTargetAtTime(3 + sp * 12, ctx.currentTime, 0.1);
+        tracks.gain.setTargetAtTime(Math.min(1, sp * 2.5) * 0.7, ctx.currentTime, 0.1);
+        return 0.3 + rpm * 0.15;
+      };
+    } else if (kind === 'heli') {
+      // Rotor "vop-vop": alçak geçirgen gürültüye kare dalga genlik modülasyonu + türbin vınlaması
+      const n = noise();
+      const lp = filter('lowpass', 420, 1);
+      n.connect(lp);
+      nodes.lfo = tremolo(lp, out, 11, 0.95, 'square');
+      const turbine = osc('sine', 1000);
+      const tg = ctx.createGain();
+      tg.gain.value = 0.04;
+      turbine.connect(tg);
+      tg.connect(out);
+      const thump = osc('sine', 55);
+      const thg = ctx.createGain();
+      thg.gain.value = 0;
+      tremolo(thump, thg, 11, 1, 'square');
+      thg.gain.value = 0.25;
+      thg.connect(out);
+      nodes.set = (rpm) => {
+        nodes.lfo.frequency.setTargetAtTime(9 + rpm * 5, ctx.currentTime, 0.2);
+        turbine.frequency.setTargetAtTime(900 + rpm * 500, ctx.currentTime, 0.2);
+        return 0.35 + rpm * 0.2;
+      };
+    } else {
+      // Uçak: pervane vızıltısı + hızla artan rüzgâr
+      const a = osc('sawtooth', 80);
+      const lp = filter('lowpass', 1200, 0.7);
+      a.connect(lp);
+      nodes.lfo = tremolo(lp, out, 30, 0.5);
+      const n = noise();
+      const hp = filter('highpass', 1500, 0.5);
+      const wind = ctx.createGain();
+      wind.gain.value = 0;
+      n.connect(hp);
+      hp.connect(wind);
+      wind.connect(out);
+      nodes.set = (rpm, sp) => {
+        a.frequency.setTargetAtTime(80 + rpm * 140, ctx.currentTime, 0.1);
+        nodes.lfo.frequency.setTargetAtTime(30 + rpm * 30, ctx.currentTime, 0.1);
+        wind.gain.setTargetAtTime(sp * 0.5, ctx.currentTime, 0.2);
+        return 0.18 + rpm * 0.18;
+      };
     }
     this.engine = nodes;
   }
 
-  setEngine(load, running = true) {
+  // rpm 0..1 (devir), speedFrac 0..1
+  setEngine(rpm, speedFrac = 0, running = true) {
     if (!this.engine && this.pendingEngine && this.ready) this.startEngine(this.pendingEngine);
     const e = this.engine;
     if (!e) return;
-    const t = this.ctx.currentTime;
-    e.osc.frequency.setTargetAtTime(e.base * (1 + load * 1.6), t, 0.08);
-    e.f.frequency.setTargetAtTime(380 + load * 900, t, 0.1);
-    e.g.gain.setTargetAtTime(running ? 0.18 + load * 0.22 : 0, t, 0.1);
-    if (e.lfo) e.lfo.frequency.setTargetAtTime((e.kind === 'heli' ? 9 : 20) + load * 14, t, 0.2);
+    const vol = e.set(rpm, speedFrac);
+    e.out.gain.setTargetAtTime(running ? vol : 0, this.ctx.currentTime, 0.1);
   }
 
   stopEngine() {
     this.pendingEngine = null;
     const e = this.engine;
     if (!e) return;
-    try {
-      e.osc.stop();
-      if (e.src) e.src.stop();
-      if (e.lfo) e.lfo.stop();
-    } catch {
-      // zaten durmuş
+    for (const n of e.stop) {
+      try {
+        n.stop();
+      } catch {
+        // zaten durmuş
+      }
     }
-    e.g.disconnect();
+    e.out.disconnect();
     this.engine = null;
   }
 

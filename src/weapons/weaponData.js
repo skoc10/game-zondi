@@ -1,17 +1,17 @@
 // Silah ve eşya tablosu: yeni silah eklemek = yeni satır.
 export const WEAPONS = {
-  crowbar: { name: 'Levye', kind: 'melee', damage: 35, interval: 0.5, range: 2.5 },
+  crowbar: { name: 'Levye', kind: 'melee', damage: 30, interval: 0.5, range: 2.5 },
   pistol: {
-    name: 'Tabanca', kind: 'hitscan', damage: 26, pellets: 1, interval: 0.2, auto: false,
-    mag: 12, maxReserve: 96, spread: 0.012, reload: 1.1, recoil: 0.03, range: 120, sound: 'pistol',
+    name: 'Tabanca', kind: 'hitscan', damage: 30, pellets: 1, interval: 0.2, auto: false,
+    mag: 12, maxReserve: 96, spread: 0.01, reload: 1.1, recoil: 0.03, range: 120, sound: 'pistol',
   },
   shotgun: {
-    name: 'Pompalı', kind: 'hitscan', damage: 14, pellets: 9, interval: 0.85, auto: false,
+    name: 'Pompalı', kind: 'hitscan', damage: 7.5, pellets: 9, interval: 0.85, auto: false,
     mag: 6, maxReserve: 36, spread: 0.075, reload: 1.9, recoil: 0.09, range: 40, falloff: 14, sound: 'shotgun',
   },
   smg: {
-    name: 'Makineli', kind: 'hitscan', damage: 17, pellets: 1, interval: 0.085, auto: true,
-    mag: 30, maxReserve: 180, spread: 0.03, reload: 1.6, recoil: 0.018, range: 100, sound: 'smg',
+    name: 'Makineli', kind: 'hitscan', damage: 30, pellets: 1, interval: 0.11, auto: true,
+    mag: 30, maxReserve: 180, spread: 0.022, reload: 1.6, recoil: 0.018, range: 100, sound: 'smg',
   },
   rocket: {
     name: 'Roketatar', kind: 'rocket', damage: 190, radius: 6.5, interval: 1.0, auto: false,

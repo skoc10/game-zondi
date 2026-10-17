@@ -110,7 +110,7 @@ export class Explosives {
     g.addShake(clamp(1.3 - dist / (radius * 3.5), 0, 1.2));
     g.input.rumble(clamp(1 - dist / 40, 0.15, 1), 0.8, 350);
     g.audio.play('explosion', p);
-    g.zombies.alert(p, 60);
+    g.zombies.alert(p, 45);
     g.stats.explosions++;
   }
 

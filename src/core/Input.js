@@ -99,7 +99,10 @@ export class Input {
     // Klavye / fare
     s.moveX = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0);
     s.moveY = (k.has('KeyW') ? 1 : 0) - (k.has('KeyS') ? 1 : 0);
-    const sens = MOUSE_RAD_PER_PX * settings.mouseSens;
+    // Sağ tık basılıyken nişan: hassasiyet düşer
+    const aimHeld = this.mouseButtons.has(2);
+    const sens = MOUSE_RAD_PER_PX * settings.mouseSens * (aimHeld ? 0.65 : 1);
+    s.aim = aimHeld;
     s.lookX = this.mouseDX * sens;
     s.lookY = this.mouseDY * sens * (settings.invertY ? -1 : 1);
     s.fire = this.mouseButtons.has(0);
@@ -114,7 +117,7 @@ export class Input {
     s.jump = kp.has('Space');
     s.reload = kp.has('KeyR');
     s.flashlight = kp.has('KeyF');
-    s.detonate = this.mousePressed.has(2) || kp.has('KeyG');
+    s.detonate = kp.has('KeyG');
     s.pause = kp.has('Escape') || kp.has('KeyP');
     s.next = this.wheel > 0 || kp.has('KeyQ');
     s.prev = this.wheel < 0;
@@ -149,7 +152,7 @@ export class Input {
       s.jumpHeld = s.jumpHeld || B[BTN.A];
       s.padActive = this.lastDevice === 'pad';
       s.firePressed = s.firePressed || this.padPressed(BTN.RT);
-      s.aim = B[BTN.LT];
+      s.aim = s.aim || B[BTN.LT];
       s.sprint = s.sprint || B[BTN.L3] || this.padSprint;
       s.interact = s.interact || B[BTN.X];
       s.interactPressed = s.interactPressed || this.padPressed(BTN.X);

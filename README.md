@@ -22,12 +22,12 @@ npm test         # birim testleri (vitest)
 | Koşu | Shift | L3 (sol çubuğa bas) |
 | Zıplama | Space | A / ✕ |
 | Ateş / kullan | Sol tık | RT / R2 |
-| Nişan (yakınlaştırma + nişan yardımı) | — | LT / L2 |
+| Nişan (yakınlaştırma, daha isabetli) | Sağ tık (basılı tut) | LT / L2 (nişan yardımıyla) |
 | Al / etkileşim | E | X / □ |
 | Şarjör | R | B / ○ |
 | Fener | F | Y / △ |
 | Eşya seç | 1–8, tekerlek, Q | RB / LB |
-| C4 patlat | Sağ tık, G | D-pad ▲ |
+| C4 patlat | G (C4 eldeyken sağ tık) | D-pad ▲ |
 | Duraklat | Esc, P | Start / Options |
 
 ### Araçlar
@@ -55,6 +55,16 @@ Binmek ve inmek için E tuşu (kolda X / □) kullanılır. Araçtayken kamera a
   - Silahlı: tabanca, pompalı, makineli veya roketatar kullanır. Ölünce silahını ve biraz mermi düşürür
   - Zırhlı: kask ve yelek takar
   - Patlayan: kafasından vurulursa yerinde patlar. Gövdesinden öldürülürse kafası düşer, alıp fırlatabilirsin
+- **Vuruş kuralı** (tabanca, levye ve makinelide bir mermi ya da darbe = 1 vuruş):
+
+  | Zombi | Gövde | Kafa |
+  |---|---|---|
+  | Küçük | 1 | 1 |
+  | Normal, silahlı, patlayan | 2 | 1 |
+  | Büyük | 3 | 2 |
+  | Zırhlı, asker | 3 | 2 |
+
+  Zırhlı ve askerlerde kask ilk kafa vuruşunu, yelek ilk gövde vuruşunu yutar. Pompalı yakından tek atışta normal zombiyi öldürür.
 - **Silahlar:** Levye, tabanca, pompalı, makineli, roketatar
 - **Patlayıcılar:**
   - Bomba
@@ -84,6 +94,8 @@ Binmek ve inmek için E tuşu (kolda X / □) kullanılır. Araçtayken kamera a
   - Zombiler iki kat sık gelir ve fenerin ışığına yönelir
 - **Pusula:** Ekranın üstünde arabanın ve benzin bidonlarının yönü ile uzaklığı gösterilir.
 - **Ses:** Tüm sesler ve müzik WebAudio ile kodda üretilir, ses dosyası kullanılmaz.
+  - Zombiler yaklaştıkça daha sık inler, seni fark edince kükrer.
+  - Her aracın motor sesi farklıdır.
 
 ## Kod yapısı
 

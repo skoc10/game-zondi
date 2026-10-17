@@ -118,18 +118,20 @@ export class Zombie {
 
   headBox() {
     const s = this.scale;
-    const hw = (this.headSize.w / 2 + 0.04) * s;
+    // Görünen kafadan biraz büyük: kafa sallanması ve küçük sapmalar affedilir
+    const hw = (this.headSize.w / 2 + 0.1) * s;
     const y0 = (1.58 + this.inner.position.y) * s;
     return {
       minX: this.pos.x - hw, maxX: this.pos.x + hw,
-      minY: y0, maxY: y0 + this.headSize.h * s + 0.05,
+      minY: y0, maxY: y0 + (this.headSize.h + 0.12) * s,
       minZ: this.pos.z - hw, maxZ: this.pos.z + hw,
     };
   }
 
   bodyBox() {
     const s = this.scale;
-    const r = 0.4 * s;
+    // Öne uzanan kolları da kapsar
+    const r = 0.52 * s;
     return {
       minX: this.pos.x - r, maxX: this.pos.x + r,
       minY: this.pos.y, maxY: (1.58 + this.inner.position.y) * s,
@@ -153,6 +155,8 @@ export class ZombieManager {
     this.collision = collision;
     this.game = game;
     this.list = [];
+    this.chaseCap = 10;
+    this.lastRoar = 0;
   }
 
   get aliveCount() {
@@ -165,6 +169,7 @@ export class ZombieManager {
     if (typeKey === 'gunner' && !opts.weapon) opts.weapon = 'pistol';
     if (typeKey === 'soldier' && !opts.weapon) opts.weapon = 'smg';
     const zb = new Zombie(typeKey, x, z, opts);
+    zb.spawned = !!opts.spawned;
     this.scene.add(zb.mesh);
     this.list.push(zb);
     return zb;
@@ -175,10 +180,62 @@ export class ZombieManager {
     this.list = [];
   }
 
-  // Ses/olay: yakındaki zombiler oyuncuyu fark eder
+  countNear(x, z, r) {
+    let n = 0;
+    for (const zb of this.list) {
+      if (zb.alive && Math.abs(zb.pos.x - x) < r && Math.abs(zb.pos.z - z) < r && Math.hypot(zb.pos.x - x, zb.pos.z - z) < r) n++;
+    }
+    return n;
+  }
+
+  get chasingCount() {
+    let n = 0;
+    for (const z of this.list) if (z.alive && z.alerted) n++;
+    return n;
+  }
+
+  // Aynı anda kovalayan zombi sayısı sınırlı
+  canChase() {
+    return this.chasingCount < this.chaseCap;
+  }
+
+  // Ses/olay: yakındaki zombiler oyuncuyu fark eder (sınır doluysa sadece çok yakındakiler)
   alert(pos, radius) {
-    for (const z of this.list) {
-      if (z.alive && z.pos.distanceTo(pos) < radius) z.alerted = true;
+    let chasing = this.chasingCount;
+    const near = [...this.list]
+      .filter((z) => z.alive && !z.alerted && z.pos.distanceTo(pos) < radius)
+      .sort((a, b) => a.pos.distanceTo(pos) - b.pos.distanceTo(pos));
+    for (const z of near) {
+      if (chasing >= this.chaseCap && z.pos.distanceTo(pos) > 12) break;
+      this.notice(z);
+      chasing++;
+    }
+  }
+
+  // Zombi oyuncuyu fark eder ve kükrer
+  notice(z) {
+    if (z.alerted) return;
+    z.alerted = true;
+    if (z.pos.distanceTo(this.game.player.pos) < 40) this.roar(z);
+  }
+
+  // Kükreme (sık sık üst üste binmesin diye kısıtlı)
+  roar(z) {
+    const now = performance.now();
+    if (z.roared || now - this.lastRoar < 400) return;
+    z.roared = true;
+    this.lastRoar = now;
+    this.game.audio.play('roar', z.pos, 1, z.type.pitch);
+  }
+
+  // Doğurucunun getirdiği, kovalamayan uzak zombiler kaldırılır
+  despawnFar(pos, r) {
+    for (let i = this.list.length - 1; i >= 0; i--) {
+      const z = this.list[i];
+      if (z.spawned && z.alive && !z.alerted && z.pos.distanceTo(pos) > r) {
+        this.scene.remove(z.mesh);
+        this.list.splice(i, 1);
+      }
     }
   }
 
@@ -213,11 +270,11 @@ export class ZombieManager {
     if (!z.alive) return { killed: false };
     const hadHelmet = z.helmet > 0;
     const hadArmor = z.armor > 0;
-    const r = damageZombie(z, amount, part === 'head' ? 'head' : cause === 'explosion' || cause === 'vehicle' ? 'blast' : 'body');
+    const r = damageZombie(z, amount, part === 'head' ? 'head' : cause === 'explosion' || cause === 'vehicle' ? 'blast' : 'body', z.type.headMult);
     z.health = r.health;
     z.armor = r.armor;
     z.helmet = r.helmet;
-    z.alerted = true;
+    this.notice(z);
     z.flash = 0.12;
     const fx = this.game.particles;
     if (hadHelmet && z.helmet <= 0 && z.helmetMesh) {
@@ -301,9 +358,14 @@ export class ZombieManager {
           if (facing > 0.85) range += 22;
         }
         if (player.speed > 6) range += 6;
-        if (dist < range) z.alerted = true;
+        if (dist < range && (dist < 12 || this.canChase())) this.notice(z);
       }
-      if (z.alerted && dist > 80) z.alerted = false;
+      // Kovalayarak gelen zombi yaklaşınca bir kez kükrer
+      if (z.alerted && dist < 25) this.roar(z);
+      if (z.alerted && dist > 80) {
+        z.alerted = false;
+        z.roared = false;
+      }
       if (!player.alive) z.alerted = false;
 
       const t = z.type;
@@ -360,6 +422,7 @@ export class ZombieManager {
             z.attackCd = t.attackRate;
             z.attackAnim = 1;
             game.hitPlayer(t.damage * (1 + night * 0.2), z.pos);
+            game.audio.play('bite', z.pos, 1, t.pitch);
             if (t.knockback && !veh) player.push(dx, dz, t.knockback);
           }
         }
@@ -454,10 +517,13 @@ export class ZombieManager {
       z.mesh.rotation.y = z.yaw + Math.PI;
 
       // İnilti
+      // İnilti: yaklaştıkça sıklaşır ve yükselir
       z.groanTimer -= dt;
       if (z.groanTimer <= 0) {
-        z.groanTimer = rand(4, 10);
-        if (dist < 35) game.audio.play('groan', z.pos, 0.6, t.pitch);
+        if (dist < 10) z.groanTimer = rand(1.2, 2.5);
+        else if (dist < 20) z.groanTimer = rand(2.5, 5);
+        else z.groanTimer = rand(5, 10);
+        if (dist < 45) game.audio.play('groan', z.pos, dist < 10 ? 1 : dist < 20 ? 0.8 : 0.5, t.pitch);
       }
     }
   }

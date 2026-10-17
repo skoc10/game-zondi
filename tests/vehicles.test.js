@@ -97,3 +97,45 @@ describe('uçak', () => {
     expect(crashed).toBe(true);
   });
 });
+
+import { gearAndRpm } from '../src/vehicles/vehiclePhysics.js';
+
+describe('akıcı kontroller', () => {
+  it('direksiyon bırakılınca kendiliğinden ortalanır', () => {
+    const st = state({ speed: 15 });
+    run(stepGround, st, ctl({ steer: 1, throttle: 0.5 }), VEHICLE_TYPES.jeep, 0.6);
+    expect(st.steerSm).toBeGreaterThan(0.9);
+    run(stepGround, st, ctl({ throttle: 0.5 }), VEHICLE_TYPES.jeep, 0.4);
+    expect(st.steerSm).toBe(0);
+  });
+  it('el freniyle dönünce araç kayar (drift)', () => {
+    const st = state({ speed: 20 });
+    run(stepGround, st, ctl({ steer: 1, handbrake: true }), VEHICLE_TYPES.jeep, 0.6);
+    const slip = Math.abs(st.moveYaw - st.yaw);
+    const grip = state({ speed: 20 });
+    run(stepGround, grip, ctl({ steer: 1 }), VEHICLE_TYPES.jeep, 0.6);
+    expect(slip).toBeGreaterThan(0.15);
+    expect(slip).toBeGreaterThan(Math.abs(grip.moveYaw - grip.yaw) * 2);
+  });
+  it('vites hızla artar, devir 0..1 aralığında kalır', () => {
+    const spec = VEHICLE_TYPES.jeep;
+    let lastGear = 0;
+    for (let v = 1; v <= spec.maxSpeed; v += 1) {
+      const { gear, rpm } = gearAndRpm(v, spec);
+      expect(gear).toBeGreaterThanOrEqual(lastGear);
+      expect(rpm).toBeGreaterThanOrEqual(0);
+      expect(rpm).toBeLessThanOrEqual(1);
+      lastGear = gear;
+    }
+    expect(lastGear).toBe(spec.gears);
+  });
+  it('uçak yatış alarak döner ve bırakınca düzelir', () => {
+    const spec = VEHICLE_TYPES.plane;
+    const st = state({ y: 60, onGround: false, speed: 35, throttleSet: 0.8 });
+    run(stepPlane, st, ctl({ steer: 1 }), spec, 2);
+    expect(st.bank).toBeGreaterThan(0.5);
+    expect(st.yaw).toBeLessThan(-0.3);
+    run(stepPlane, st, ctl(), spec, 3);
+    expect(Math.abs(st.bank)).toBeLessThan(0.05);
+  });
+});

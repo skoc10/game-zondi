@@ -433,8 +433,7 @@ export class VehicleManager {
     const down = spec.kind === 'heli' ? -14 : -1.5;
     this.headlight.target.position.set(st.x + fwd.x * 20, st.y + down, st.z + fwd.z * 20);
 
-    const load = spec.kind === 'plane' ? st.throttleSet : clamp(Math.abs(st.speed) / spec.maxSpeed + Math.abs(c.throttle) * 0.2, 0, 1);
-    g.audio.setEngine(load, st.fuel > 0);
+    g.audio.setEngine(st.rpm || 0, clamp(Math.abs(st.speed) / spec.maxSpeed, 0, 1), st.fuel > 0);
   }
 
   resolveGround(v, dt) {
@@ -601,7 +600,7 @@ export class VehicleManager {
         g.audio.play('cannon');
         g.addShake(0.5);
         g.input.rumble(1, 0.8, 300);
-        g.zombies.alert(v.pos, 70);
+        g.zombies.alert(v.pos, 50);
         st.speed -= 1.5;
       }
     } else if (v.typeKey === 'heli') {
@@ -618,7 +617,7 @@ export class VehicleManager {
         g.particles.tracer(nose, res.point);
         if (res.hitZombie) g.hud.hitMarker(res.killed);
         g.audio.play('smg', null, 0.7);
-        g.zombies.alert(v.pos, 60);
+        g.zombies.alert(v.pos, 40);
       }
       if (s.secondary && v.cooldown2 <= 0 && !st.onGround) this.dropBomb(v);
     } else if (v.typeKey === 'plane') {
@@ -695,14 +694,16 @@ export class VehicleManager {
       this.camPos.copy(desired);
       this.camInit = true;
     } else {
-      this.camPos.lerp(desired, 1 - Math.exp(-10 * dt));
+      this.camPos.lerp(desired, 1 - Math.exp(-6 * dt));
     }
     const shake = g.shake;
     cam.position.copy(this.camPos).add(new THREE.Vector3((Math.random() - 0.5) * shake * 0.3, (Math.random() - 0.5) * shake * 0.3, 0));
     const look = target.clone().addScaledVector(back, -6).add(new THREE.Vector3(0, 1.2, 0));
     cam.lookAt(look);
-    if (cam.fov !== 70) {
-      cam.fov = 70;
+    // Hız hissi: hızlandıkça görüş açısı biraz genişler
+    const fov = 70 + clamp(Math.abs(st.speed) / spec.maxSpeed, 0, 1) * 8;
+    if (Math.abs(cam.fov - fov) > 0.05) {
+      cam.fov = damp(cam.fov, fov, 4, dt);
       cam.updateProjectionMatrix();
     }
   }

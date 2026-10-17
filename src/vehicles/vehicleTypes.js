@@ -3,25 +3,25 @@ export const VEHICLE_TYPES = {
   motorcycle: {
     name: 'Motosiklet', enter: 'Motosiklete bin', kind: 'ground',
     maxSpeed: 28, reverse: 5, accel: 13, brake: 26, turn: 2.6,
-    hp: 120, fuel: 120, ram: 0.4, exposed: true, armor: 1,
+    hp: 120, fuel: 120, ram: 0.4, exposed: true, armor: 1, grip: 7, gears: 5,
     length: 2.1, width: 0.8, height: 1.3, seat: [0, 0.55, 0.25], cam: [5, 2.2],
   },
   jeep: {
     name: 'Askeri cip', enter: 'Cipe bin', kind: 'ground',
     maxSpeed: 22, reverse: 8, accel: 10, brake: 22, turn: 2.0,
-    hp: 300, fuel: 150, ram: 1.0, armor: 1,
+    hp: 300, fuel: 150, ram: 1.0, armor: 1, grip: 6, gears: 4,
     length: 4.2, width: 2.0, height: 1.9, seat: [-0.45, 0.75, 0.2], cam: [8, 3.2],
   },
   pickup: {
     name: 'Pikap', enter: 'Pikaba bin', kind: 'ground',
     maxSpeed: 18, reverse: 7, accel: 8, brake: 20, turn: 1.8,
-    hp: 400, fuel: 180, ram: 1.2, armor: 0.9,
+    hp: 400, fuel: 180, ram: 1.2, armor: 0.9, grip: 5, gears: 4,
     length: 5.0, width: 2.1, height: 2.0, seat: [-0.45, 0.8, -0.3], cam: [9, 3.4],
   },
   tank: {
     name: 'Tank', enter: 'Tanka bin', kind: 'ground',
     maxSpeed: 8, reverse: 5, accel: 5, brake: 12, turn: 1.0, pivot: true,
-    hp: 1500, fuel: 240, ram: 3, crush: true, armor: 0.1,
+    hp: 1500, fuel: 240, ram: 3, crush: true, armor: 0.1, grip: 20, gears: 2,
     length: 7, width: 3.4, height: 2.6, seat: [0, 2.2, 0.6], cam: [13, 5.5],
     cannon: { interval: 2, radius: 7, damage: 260, speed: 48 },
   },
@@ -30,7 +30,7 @@ export const VEHICLE_TYPES = {
     maxSpeed: 22, accel: 8, climb: 7, turn: 1.6,
     hp: 350, fuel: 150, ram: 0, armor: 0.6,
     length: 9, width: 2.4, height: 3, seat: [0, 0.9, -1.2], cam: [14, 5],
-    gun: { interval: 0.09, damage: 22, spread: 0.025, range: 160 },
+    gun: { interval: 0.1, damage: 30, spread: 0.025, range: 160 },
     bomb: { interval: 0.8, radius: 6.5, damage: 200 },
   },
   plane: {

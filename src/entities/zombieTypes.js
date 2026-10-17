@@ -1,34 +1,43 @@
+import { HIT } from '../core/combat.js';
+
 // Zombi türleri tablosu. Hepsi yeşil, kafaları dikdörtgen kutu.
+// bodyHits/headHits: tabanca/levye ile kaç vuruşta öldüğü. Can = bodyHits × HIT.
+// Kask ve yelek ayrıca birer vuruş yutar.
 export const ZOMBIE_TYPES = {
   small: {
-    name: 'Küçük', hp: 30, speed: 5.0, scale: 0.62, damage: 6, attackRate: 0.7,
+    name: 'Küçük', bodyHits: 1, headHits: 1, speed: 5.0, scale: 0.62, damage: 6, attackRate: 0.7,
     skin: '#9ccc65', cloth: '#558b2f', pants: '#33691e', pitch: 1.7,
   },
   normal: {
-    name: 'Normal', hp: 60, speed: 2.8, scale: 1, damage: 11, attackRate: 1.0,
+    name: 'Normal', bodyHits: 2, headHits: 1, speed: 2.8, scale: 1, damage: 11, attackRate: 1.0,
     skin: '#6aa84f', cloth: '#38761d', pants: '#274e13', pitch: 1,
   },
   big: {
-    name: 'Büyük', hp: 320, speed: 1.9, scale: 1.8, damage: 26, attackRate: 1.5, knockback: 11,
+    name: 'Büyük', bodyHits: 3, headHits: 2, speed: 1.9, scale: 1.8, damage: 26, attackRate: 1.5, knockback: 11,
     skin: '#4b7f32', cloth: '#2e5a1c', pants: '#1b3a10', pitch: 0.55,
   },
   gunner: {
-    name: 'Silahlı', hp: 60, speed: 2.6, scale: 1, damage: 9, attackRate: 1.0, ranged: true,
+    name: 'Silahlı', bodyHits: 2, headHits: 1, speed: 2.6, scale: 1, damage: 9, attackRate: 1.0, ranged: true,
     skin: '#7cb342', cloth: '#3d5c1f', pants: '#2a3f14', pitch: 0.9,
   },
   armored: {
-    name: 'Zırhlı', hp: 80, armor: 70, helmet: 45, speed: 2.5, scale: 1.05, damage: 12, attackRate: 1.0,
+    name: 'Zırhlı', bodyHits: 2, headHits: 1, armor: HIT, helmet: HIT, speed: 2.5, scale: 1.05, damage: 12, attackRate: 1.0,
     skin: '#689f38', cloth: '#2e4d14', pants: '#1f3a0d', pitch: 0.8,
   },
   soldier: {
-    name: 'Asker', hp: 90, armor: 50, helmet: 40, speed: 2.7, scale: 1.05, damage: 12, attackRate: 1.0, ranged: true,
+    name: 'Asker', bodyHits: 2, headHits: 1, armor: HIT, helmet: HIT, speed: 2.7, scale: 1.05, damage: 12, attackRate: 1.0, ranged: true,
     skin: '#7cb342', cloth: '#5b6b3a', pants: '#4a5530', pitch: 0.85, gear: '#3f4a22',
   },
   exploder: {
-    name: 'Patlayan', hp: 40, speed: 3.2, scale: 1.0, damage: 0, attackRate: 1.0, exploder: true,
+    name: 'Patlayan', bodyHits: 2, headHits: 1, speed: 3.2, scale: 1.0, damage: 0, attackRate: 1.0, exploder: true,
     skin: '#aed581', cloth: '#689f38', pants: '#33691e', pitch: 1.3,
   },
 };
+
+for (const t of Object.values(ZOMBIE_TYPES)) {
+  t.hp = t.bodyHits * HIT;
+  t.headMult = t.bodyHits / t.headHits;
+}
 
 // Silahlı zombilerin kullandığı silahlar (oyuncuya ateş)
 export const GUNNER_WEAPONS = {

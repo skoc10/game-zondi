@@ -96,8 +96,9 @@ export class WeaponSystem {
     if (s.prev) inv.cycle(-1);
     if (inv.active !== prev || inv.throwKind !== prevThrow) this.onSwitch();
 
-    // C4 her slottan patlatılabilir
-    if (s.detonate && g.explosives.detonateC4() > 0) g.hud.toast('C4 patlatıldı!');
+    // C4 her slottan G ile; C4 eldeyken sağ tıkla da patlar
+    const detonate = s.detonate || (inv.activeId === 'c4' && s.secondary);
+    if (detonate && g.explosives.detonateC4() > 0) g.hud.toast('C4 patlatıldı!');
 
     const id = inv.activeId;
     const w = WEAPONS[id];
@@ -211,7 +212,7 @@ export class WeaponSystem {
     player.yaw += rand(-0.3, 0.3) * w.recoil;
     g.audio.play(w.sound);
     g.input.rumble(id === 'shotgun' || id === 'rocket' ? 0.8 : 0.3, 0.5, id === 'smg' ? 60 : 120);
-    g.zombies.alert(player.pos, 45);
+    g.zombies.alert(player.pos, 35);
     const eye = player.eye;
     const fwd = player.forward();
     const muzzle = this.muzzleWorld();
@@ -224,9 +225,9 @@ export class WeaponSystem {
       return;
     }
 
-    // Saçılma: koşarken/zıplarken artar, nişan alınca azalır
-    const moveSpread = 1 + player.speed * 0.08 + (player.onGround ? 0 : 1.5);
-    const spread = w.spread * moveSpread * (1 - this.aim * 0.5);
+    // Saçılma: dururken çok küçük, koşarken/zıplarken artar, nişan alınca daha da azalır
+    const moveSpread = 0.35 + player.speed * 0.12 + (player.onGround ? 0 : 1.5);
+    const spread = w.spread * moveSpread * (1 - this.aim * 0.6);
     const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
     const up = new THREE.Vector3().crossVectors(right, fwd).normalize();
     let hitAny = false;
@@ -400,7 +401,7 @@ export class WeaponSystem {
       pos = new THREE.Vector3(p.pos.x + (f.x / l) * 1.5, 0, p.pos.z + (f.z / l) * 1.5);
     }
     g.explosives.placeC4(pos, normal);
-    const key = g.input.lastDevice === 'pad' ? 'D-pad ▲' : 'Sağ Tık';
+    const key = g.input.lastDevice === 'pad' ? 'D-pad ▲' : 'G (ya da C4 eldeyken sağ tık)';
     g.hud.toast(`C4 yerleştirildi — patlatmak için ${key}`);
     this.afterUse();
   }
