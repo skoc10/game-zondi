@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Benzin Bitmeden</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="hurt"></div>
+    <div id="lowhp"></div>
+    <div id="hurt-dir"><span></span></div>
+
+    <div id="compass"><div id="compass-strip"></div><div id="compass-center"></div></div>
+
+    <div id="top-left" class="panel">
+      <div id="objective">Benzin bidonlarını bul</div>
+      <div class="row"><span class="gas-icon"></span> Benzin <b id="gas-count">0 / 5</b></div>
+    </div>
+    <div id="top-right" class="panel">
+      <div id="time-label">☀ Gündüz</div>
+      <div id="kill-count">☠ 0</div>
+      <div id="flashlight-state"></div>
+    </div>
+
+    <div id="crosshair"><i></i><i></i><i></i><i></i></div>
+    <div id="hitmarker"></div>
+    <div id="banner"></div>
+    <div id="toasts"></div>
+
+    <div id="prompt"><span id="prompt-key">E</span><span id="prompt-text"></span><div id="prompt-bar"></div></div>
+
+    <div id="bottom-left" class="panel">
+      <div class="bar"><label>CAN</label><div class="track"><div id="health-fill" class="fill hp"></div></div><b id="health-text">100</b></div>
+      <div class="bar"><label>ZIRH</label><div class="track"><div id="armor-fill" class="fill ar"></div></div><b id="armor-text">0</b></div>
+      <div class="bar thin"><label>KOŞU</label><div class="track"><div id="stamina-fill" class="fill st"></div></div></div>
+    </div>
+    <div id="bottom-right" class="panel">
+      <div id="weapon-name">Levye</div>
+      <div id="ammo">∞</div>
+    </div>
+    <div id="slots"></div>
+  </div>
+
+  <!-- Menüler -->
+  <div id="menu-main" class="screen show">
+    <div class="menu-box">
+      <h1>BENZİN<br/>BİTMEDEN</h1>
+      <p class="sub">Arabanın deposu boş. Gece yaklaşıyor.<br/>5 benzin bidonu bul, arabaya dök ve kaç!</p>
+      <div class="menu-item btn primary" data-action="play">OYNA</div>
+      <div class="menu-item btn" data-action="controls">KONTROLLER</div>
+      <div class="menu-item btn" data-action="settings">AYARLAR</div>
+      <p class="pad-status" id="pad-status">Oyun kolu: bağlı değil (bağlamak için koldaki bir tuşa bas)</p>
+    </div>
+  </div>
+
+  <div id="menu-pause" class="screen">
+    <div class="menu-box">
+      <h2>DURAKLATILDI</h2>
+      <div class="menu-item btn primary" data-action="resume">DEVAM ET</div>
+      <div class="menu-item btn" data-action="controls-pause">KONTROLLER</div>
+      <div class="menu-item btn" data-action="settings-pause">AYARLAR</div>
+      <div class="menu-item btn" data-action="restart">YENİDEN BAŞLA</div>
+      <div class="menu-item btn" data-action="quit">ANA MENÜ</div>
+    </div>
+  </div>
+
+  <div id="menu-settings" class="screen">
+    <div class="menu-box">
+      <h2>AYARLAR</h2>
+      <label class="menu-item range">Fare hassasiyeti <input type="range" min="0.2" max="3" step="0.1" data-key="mouseSens" /></label>
+      <label class="menu-item range">Kol bakış hassasiyeti <input type="range" min="0.3" max="2.5" step="0.1" data-key="padSens" /></label>
+      <div class="menu-item toggle" data-key="invertY">Y eksenini ters çevir <span class="val"></span></div>
+      <div class="menu-item toggle" data-key="vibration">Kol titreşimi <span class="val"></span></div>
+      <div class="menu-item toggle" data-key="aimAssist">Kol nişan yardımı <span class="val"></span></div>
+      <label class="menu-item range">Ses <input type="range" min="0" max="1" step="0.05" data-key="volume" /></label>
+      <label class="menu-item range">Müzik <input type="range" min="0" max="1" step="0.05" data-key="music" /></label>
+      <div class="menu-item btn" data-action="back">GERİ</div>
+    </div>
+  </div>
+
+  <div id="menu-controls" class="screen">
+    <div class="menu-box wide">
+      <h2>KONTROLLER</h2>
+      <div class="controls">
+        <table>
+          <tr><th></th><th>Klavye / Fare</th><th>Kol (Xbox / PS)</th></tr>
+          <tr><td>Hareket</td><td>W A S D</td><td>Sol çubuk</td></tr>
+          <tr><td>Bakış</td><td>Fare</td><td>Sağ çubuk</td></tr>
+          <tr><td>Koşu</td><td>Shift</td><td>L3 (sol çubuğa bas)</td></tr>
+          <tr><td>Zıplama</td><td>Space</td><td>A / ✕</td></tr>
+          <tr><td>Ateş / Kullan</td><td>Sol tık</td><td>RT / R2</td></tr>
+          <tr><td>Nişan</td><td>—</td><td>LT / L2</td></tr>
+          <tr><td>Al / Etkileşim</td><td>E</td><td>X / □</td></tr>
+          <tr><td>Şarjör</td><td>R</td><td>B / ○</td></tr>
+          <tr><td>Fener</td><td>F</td><td>Y / △</td></tr>
+          <tr><td>Eşya seç</td><td>1–8, tekerlek, Q</td><td>RB / LB</td></tr>
+          <tr><td>C4 patlat</td><td>Sağ tık, G</td><td>D-pad ▲</td></tr>
+          <tr><td>Duraklat</td><td>Esc, P</td><td>Start / Options</td></tr>
+        </table>
+        <ul class="tips">
+          <li>Silahlı zombileri öldür, düşen silahı ve mermiyi al.</li>
+          <li>Levye sandıkları kırar: içinden bomba, TNT, C4, mermi, zırh çıkar.</li>
+          <li>Kırmızı variller vurulunca patlar ve birbirini tetikler.</li>
+          <li>Patlayan zombiyi kafasından vurursan yerinde patlar. Gövdesinden öldürürsen kafası düşer: al ve fırlat!</li>
+          <li>Gece zombiler artar ve fenerin ışığına gelir.</li>
+        </ul>
+      </div>
+      <div class="menu-item btn" data-action="back">GERİ</div>
+    </div>
+  </div>
+
+  <div id="menu-end" class="screen">
+    <div class="menu-box">
+      <h2 id="end-title">ÖLDÜN</h2>
+      <p class="sub" id="end-sub"></p>
+      <div id="end-stats"></div>
+      <div class="menu-item btn primary" data-action="restart">YENİDEN OYNA</div>
+      <div class="menu-item btn" data-action="quit">ANA MENÜ</div>
+    </div>
+  </div>
+
+  <div id="fade"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
