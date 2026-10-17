@@ -23,6 +23,8 @@ export const CLEAR_ZONES = [
   [-20, BARRICADE_Z - 12, 20, BARRICADE_Z + 12],
   [-150, -36, -118, -4], // okul
   [100, 95, 205, 190], // nükleer tesis
+  [-205, -205, -128, -128], // roket üssü
+  [-130, -156, -4, -144], // üs yolu (batı)
   [0, 115, 106, 125], // tesis yolu
 ];
 

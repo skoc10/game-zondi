@@ -3,6 +3,8 @@ import { Input } from './Input.js';
 import { CollisionWorld } from './Collision.js';
 import { World, GAS_SPOTS, CAR_POS, GAS_REQUIRED } from '../world/World.js';
 import { destroyPylon } from '../world/facility.js';
+import { SpaceWorld, StaticLighting } from '../world/spaceStation.js';
+import { LAUNCH } from '../world/launchSite.js';
 import { DayNight, NIGHT_START } from '../world/DayNight.js';
 import { BOX_GEO } from '../world/materials.js';
 import { Particles } from '../fx/Particles.js';
@@ -21,6 +23,8 @@ import { Menu } from '../ui/Menu.js';
 import { Radio } from '../ui/Radio.js';
 import { RescueMission } from '../levels/RescueMission.js';
 import { ReactorMission } from '../levels/ReactorMission.js';
+import { LaunchMission } from '../levels/LaunchMission.js';
+import { StationMission } from '../levels/StationMission.js';
 import { loadProgress, saveProgress, LAST_LEVEL, LEVEL_SELECT_UNLOCKED } from './Progress.js';
 import { applyLoadout } from '../levels/loadouts.js';
 import { randInt, chance, pickWeighted, rand, formatTime } from './math.js';
@@ -80,20 +84,23 @@ export class Game {
     this.renderer.renderLists.dispose();
   }
 
-  buildScene(level = 1) {
+  // sub 'space': 4. bölümün uzay istasyonu sahnesi
+  buildScene(level = 1, sub = null) {
     if (this.mission) this.mission.dispose();
     this.mission = null;
     this.children = [];
     this.deadChild = null;
     this.level = level;
+    this.sub = sub;
+    const space = level === 4 && sub === 'space';
     this.radio.clear();
     this.disposeScene();
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 400);
     this.scene.add(this.camera);
     this.collision = new CollisionWorld();
-    this.world = new World(this.scene, this.collision, level);
-    this.dayNight = new DayNight(this.scene);
+    this.world = space ? new SpaceWorld(this.scene, this.collision, level) : new World(this.scene, this.collision, level);
+    this.dayNight = space ? new StaticLighting(this.scene) : new DayNight(this.scene);
     this.particles = new Particles(this.scene);
     this.player = new Player(this.camera, this.collision, this.audio);
     this.pickups = new PickupManager(this.scene);
@@ -105,11 +112,14 @@ export class Game {
     const extra = {
       2: [['sedan', CAR_POS.x, CAR_POS.z, 0]],
       3: [['sedan', 7, 174, Math.PI / 2], ['jeep', -6, 176, Math.PI / 2]],
+      4: [['jeep', LAUNCH.start.x + 4, LAUNCH.start.z + 4, Math.PI / 2]],
     }[level] || [];
-    this.vehicles = new VehicleManager(this, extra);
+    this.vehicles = new VehicleManager(this, space ? [] : extra, !space);
     this.inventory.reset();
     if (level === 1) GAS_SPOTS.forEach((s, i) => this.pickups.spawn('gas', s.x, s.z, { spot: i }));
-    this.spawner.populate();
+    // Uzayda zombi doğurucu yok
+    if (space) this.spawner.disabled = true;
+    else this.spawner.populate();
     this.gasDelivered = 0;
     this.pour = 0;
     this.shake = 0;
@@ -121,6 +131,7 @@ export class Game {
     this.stats = { kills: 0, headshots: 0, explosionKills: 0, roadkills: 0, explosions: 0, time: 0 };
     if (level === 2) this.mission = new RescueMission(this);
     else if (level === 3) this.mission = new ReactorMission(this);
+    else if (level === 4) this.mission = space ? new StationMission(this) : new LaunchMission(this);
     if (this.weapons) this.resize();
   }
 
@@ -134,15 +145,15 @@ export class Game {
     const prog = loadProgress();
     const cont = document.getElementById('btn-continue');
     cont.style.display = prog ? '' : 'none';
-    if (prog) cont.textContent = `DEVAM ET: ${prog.level}. BÖLÜM`;
+    if (prog) cont.textContent = `DEVAM ET: ${prog.level}. BÖLÜM${prog.sub === 'space' ? ' (UZAY)' : ''}`;
     document.getElementById('btn-levels').style.display = LEVEL_SELECT_UNLOCKED ? '' : 'none';
     this.menu.open('menu-main');
   }
 
   // carry: önceki bölümden taşınan eşya/can; yoksa bölümün hazır eşyaları verilir
-  newGame(level = 1, carry = null) {
+  newGame(level = 1, carry = null, sub = null) {
     this.audio.stopEngine();
-    this.buildScene(level);
+    this.buildScene(level, sub);
     this.state = 'playing';
     this.menu.close();
     this.hud.show(true);
@@ -152,7 +163,7 @@ export class Game {
       this.player.health = Math.max(60, Math.min(100, carry.health || 100));
       this.player.armor = Math.max(0, Math.min(100, carry.armor || 0));
     } else {
-      applyLoadout(level, this.inventory, this.player);
+      applyLoadout(level, this.inventory, this.player, sub);
     }
     if (this.mission) {
       this.mission.start();
@@ -184,7 +195,7 @@ export class Game {
     if (pylon.hp <= 0) {
       destroyPylon(this.world, pylon);
       this.explosives.explode(pylon.pos.clone().setY(2), 3.5, 40);
-      this.hud.toast('Kalkan direği yıkıldı!');
+      this.hud.toast(this.sub === 'space' ? 'Kristal yıkıldı!' : 'Kalkan direği yıkıldı!');
     }
   }
 
@@ -221,13 +232,14 @@ export class Game {
       case 'restart': {
         // Kayıt bu bölüme aitse eşyalarla, değilse hazır eşyalarla baştan
         const prog = loadProgress();
-        this.newGame(this.level, prog && prog.level === this.level ? prog : null);
+        const same = prog && prog.level === this.level && (prog.sub || null) === (this.sub || null);
+        this.newGame(this.level, same ? prog : null, this.sub);
         break;
       }
       case 'next':
       case 'continue': {
         const prog = loadProgress();
-        if (prog) this.newGame(prog.level, prog);
+        if (prog) this.newGame(prog.level, prog, prog.sub || null);
         break;
       }
       case 'levels':
@@ -266,7 +278,8 @@ export class Game {
         break;
       default:
         // Bölüm seçimi: level-1 … level-4
-        if (action.startsWith('level-')) this.newGame(parseInt(action.slice(6), 10), null);
+        if (action === 'level-4s') this.newGame(4, null, 'space');
+        else if (action.startsWith('level-')) this.newGame(parseInt(action.slice(6), 10), null);
         break;
     }
   }
@@ -311,7 +324,9 @@ export class Game {
       this.pickups.spawn('weapon', x + off(), zz + off(), { weapon: z.weapon, ammo: randInt(a, b) });
       z.armR.children.forEach((c) => { if (c.type === 'Group') c.visible = false; });
     }
-    if (z.type.exploder && !z.removed) {
+    // Uzaylılar bazen lazer düşürür
+    if (z.type.alien && !z.type.boss && !z.type.flying && chance(0.45)) this.pickups.spawn('weapon', x + off(), zz + off(), { weapon: 'laser', ammo: randInt(14, 24) });
+    if (z.type.exploder && !z.removed && !z.type.alien) {
       // Gövdeden öldürülen patlayan zombinin kafası düşer
       z.head.visible = false;
       z.headless = true;
@@ -476,6 +491,13 @@ export class Game {
     }
   }
 
+  // Fırlatma sahnesinden sonra uzay istasyonu (eşyalar taşınır, kayıt alınır)
+  enterSpace() {
+    const carry = { level: 4, sub: 'space', inventory: this.inventory.serialize(), health: this.player.health, armor: this.player.armor };
+    saveProgress(carry);
+    this.newGame(4, carry, 'space');
+  }
+
   startEscape() {
     this.audio.stopEngine();
     this.state = 'escaping';
@@ -631,6 +653,9 @@ export class Game {
         break;
       case 'escaping':
         this.tickEscape(dt);
+        break;
+      case 'cinematic':
+        if (this.mission && this.mission.cinematic(dt)) this.enterSpace();
         break;
       case 'paused':
         // Kolda Start ile devam (klavyede fare kilidi için tıklama gerekir)

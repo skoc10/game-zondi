@@ -92,7 +92,7 @@ class Vehicle {
 }
 
 export class VehicleManager {
-  constructor(game, extraSpots = []) {
+  constructor(game, extraSpots = [], includeDefaults = true) {
     this.game = game;
     this.list = [];
     this.current = null;
@@ -107,7 +107,7 @@ export class VehicleManager {
     this.headlight = new THREE.SpotLight('#fff3d0', 0, 50, 0.6, 0.5, 1.2);
     game.scene.add(this.headlight);
     game.scene.add(this.headlight.target);
-    for (const [type, x, z, yaw] of [...VEHICLE_SPOTS, ...extraSpots]) this.spawn(type, x, z, yaw);
+    for (const [type, x, z, yaw] of [...(includeDefaults ? VEHICLE_SPOTS : []), ...extraSpots]) this.spawn(type, x, z, yaw);
   }
 
   spawn(type, x, z, yaw = 0) {

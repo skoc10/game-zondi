@@ -289,6 +289,18 @@ export class Sound {
         this.noiseBurst(d, { dur: 4, freq: 900, freqEnd: 40, vol: 2, attack: 0.01 });
         this.tone(d, { type: 'sine', freq: 60, freqEnd: 18, dur: 3.5, vol: 1.6 });
         break;
+      case 'alien':
+        this.tone(d, { type: 'sine', freq: 900 * pitch, freqEnd: 1600 * pitch, dur: 0.25, vol: 0.3 });
+        this.tone(d, { type: 'triangle', freq: 1500 * pitch, freqEnd: 700 * pitch, dur: 0.3, vol: 0.25, delay: 0.2 });
+        break;
+      case 'launch':
+        this.noiseBurst(d, { dur: 7, freq: 600, freqEnd: 120, vol: 1.6, attack: 0.8 });
+        this.tone(d, { type: 'sawtooth', freq: 40, freqEnd: 90, dur: 6.5, vol: 0.8, attack: 0.5 });
+        break;
+      case 'door':
+        this.tone(d, { type: 'sine', freq: 400, freqEnd: 1200, dur: 0.35, vol: 0.3 });
+        this.noiseBurst(d, { dur: 0.4, type: 'bandpass', freq: 800, q: 1, vol: 0.3, attack: 0.05 });
+        break;
       case 'radio':
         this.noiseBurst(d, { dur: 0.35, type: 'bandpass', freq: 2200, q: 0.8, vol: 0.35, attack: 0.01 });
         this.tone(d, { type: 'square', freq: 1400, dur: 0.07, vol: 0.12, delay: 0.32 });

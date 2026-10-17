@@ -19,6 +19,7 @@ export class Player {
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
     this.knock = new THREE.Vector3();
+    this.gravity = GRAVITY; // uzayda düşük
     this.flashlight = new THREE.SpotLight('#fff4d6', 0, 48, 0.42, 0.55, 1.1);
     this.flashlight.castShadow = true;
     this.flashlight.shadow.mapSize.set(1024, 1024);
@@ -105,7 +106,7 @@ export class Player {
       this.onGround = false;
       this.audio.play('jump', null, 0.8);
     }
-    this.vel.y -= GRAVITY * dt;
+    this.vel.y -= this.gravity * dt;
 
     this.pos.x += (this.vel.x + this.knock.x) * dt;
     this.pos.z += (this.vel.z + this.knock.z) * dt;

@@ -96,6 +96,9 @@ describe('bölümler arası taşıma', () => {
     expect(loadProgress(st)).toBeNull();
     saveProgress({ level: 4 }, st);
     expect(loadProgress(st)).toEqual({ level: 4 });
+    // Fırlatmadan sonra uzay istasyonundan devam
+    saveProgress({ level: 4, sub: 'space' }, st);
+    expect(loadProgress(st).sub).toBe('space');
     expect(loadProgress(undefined)).toBeNull();
   });
 });

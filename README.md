@@ -6,14 +6,26 @@ Gece, deposu boş bir arabanın yanında doğuyorsun. Elinde sadece **fener** ve
 
 ## Bölümler
 
-1. **Benzin Bitmeden:** Deposu boş arabanın yanında fener ve levyeyle başlarsın. 5 benzin bidonunu bul, arabaya dök ve kaç.
-2. **Okuldaki Çocuk:** 1. bölüm bitince başlar. Gecedir, benzini dolu mavi arabanın içindesin ve eşyaların seninle.
-   - Telsizden Deniz adında bir çocuğun yardım çağrısı gelir. Köyün güneyindeki okulda saklanıyor; okulun kapısı tahtalarla çakılı ve çevresi zombi dolu.
-   - Tahtaları levyeyle (3 darbe) ya da silah/patlayıcıyla kır. İçeride Deniz'e **E / X** ile "Benimle gel!" de.
-   - Deniz seni takip eder. Zombiler ona da saldırır, ölürse bölüm biter. Araca binince o da biner (uçak hariç).
-   - Yeşil dumanı takip ederek onu kuzey barikatındaki **güvenli bölgeye** götür. Kamptaki nöbetçi taretler yaklaşan zombileri vurur.
+1. **Benzin Bitmeden:** Deposu boş arabanın yanında fener ve levyeyle başlarsın. Benzin bidonlarını bul, arabaya dök ve kaç.
+2. **Mahsur Çocuklar:** Gece, benzini dolu mavi arabanın içinde başlarsın.
+   - Üç çocuk saklanıyor: **Deniz** okulda, **Ela** çiftlik ambarında saman balyalarının arasında, **Can** benzinlik dükkânında. Kapılar tahtayla çakılı.
+   - Tahtaları levyeyle (3 darbe) ya da silah/patlayıcıyla kır, çocuğa **E / X** ile "Benimle gel!" de.
+   - Çocuklar sırayla seni takip eder ve araca biner. Koltuk sayısı araca göre değişir (sedan/cip/pikap/helikopter 3, tank 2, motosiklet 1, uçak 0).
+   - Üçünü de kuzey barikatındaki **güvenli bölgeye** götür. Biri ölürse bölüm biter.
+3. **Nükleer Tesis:** Salgın kuzeydoğudaki nükleer tesiste başladı.
+   - Lazerli **bilim insanları** ve zehir şişesi atan **kimyagerler** tesisi koruyor.
+   - Kontrol odasındaki **Dr. Kaos** kalkanlı: önce iki mor kalkan direğini yık. Canı azalınca zombi çağırır.
+   - Dr. Kaos ölünce reaktör kapısı açılır. Bombayı çekirdeğe kur (**E basılı tut**). **90 saniyede** reaktörden 140 m uzaklaş!
+4. **Roket ve Uzay İstasyonu:**
+   - Güneybatıdaki roket üssünde konsoldan fırlatma sayımını başlat. Zombiler konsola saldırır; **60 saniye** savun.
+   - Kuledeki sarı asansörle rokete bin ve fırlatmayı izle.
+   - Uzay istasyonunda yerçekimi düşük, pencerede Dünya görünür. Mor **uzaylılar** lazerle ateş eder, uçan **droneler** yaklaşınca patlar.
+   - Her bölme temizlenince enerji kapısı açılır. Çekirdek odasındaki **Uzaylı Kraliçe** üç aşamalı: pembe kristaller kalkanını besler.
+   - Kraliçe ölünce **DÜNYA KURTARILDI!**
 
-İlerleme tarayıcıda kaydedilir. Ana menüdeki **"DEVAM ET: 2. BÖLÜM"** ile 2. bölüme, 1. bölümün sonundaki eşyalarla geri dönebilirsin.
+İlerleme tarayıcıda kaydedilir. Bölüm sonundaki **"N. BÖLÜME DEVAM"** ya da ana menüdeki **"DEVAM ET"** ile eşyalarınla sonraki bölüme geçersin.
+
+> **Geçici test ayarları:** Ana menüdeki **BÖLÜM SEÇ** ile her bölüm (ve doğrudan uzay istasyonu) hazır eşyalarla başlatılabilir (`LEVEL_SELECT_UNLOCKED`, `src/core/Progress.js`). 1. bölümde tek benzin bidonu yeterli (`GAS_REQUIRED`, `src/world/World.js`). Testler bitince bölümler sırayla açılacak ve benzin 5'e dönecek.
 
 ## Çalıştırma
 
@@ -67,6 +79,7 @@ Binmek ve inmek için E tuşu (kolda X / □) kullanılır. Araçtayken kamera a
   - Silahlı: tabanca, pompalı, makineli veya roketatar kullanır. Ölünce silahını ve biraz mermi düşürür
   - Zırhlı: kask ve yelek takar
   - Patlayan: kafasından vurulursa yerinde patlar. Gövdesinden öldürülürse kafası düşer, alıp fırlatabilirsin
+- **İnsanlar ve uzaylılar** (yeşil değil): bilim insanı (lazer), kimyager (zehir bulutu), Dr. Kaos; uzaylı (lazer), drone (uçar, patlar), Uzaylı Kraliçe
 - **Vuruş kuralı** (tabanca, levye ve makinelide bir mermi ya da darbe = 1 vuruş):
 
   | Zombi | Gövde | Kafa |
@@ -77,7 +90,7 @@ Binmek ve inmek için E tuşu (kolda X / □) kullanılır. Araçtayken kamera a
   | Zırhlı, asker | 3 | 2 |
 
   Zırhlı ve askerlerde kask ilk kafa vuruşunu, yelek ilk gövde vuruşunu yutar. Pompalı yakından tek atışta normal zombiyi öldürür.
-- **Silahlar:** Levye, tabanca, pompalı, makineli, roketatar
+- **Silahlar:** Levye, tabanca, pompalı, makineli, roketatar, lazer (bilim insanlarından ve uzaylılardan düşer)
 - **Patlayıcılar:**
   - Bomba
   - TNT (3 saniyelik fitil)
@@ -113,7 +126,7 @@ Binmek ve inmek için E tuşu (kolda X / □) kullanılır. Araçtayken kamera a
 
 ```
 src/core/      Oyun döngüsü (Game), girdi (klavye/fare + kol), çarpışma, hasar kuralları, ayarlar
-src/world/     Harita, bölgeler (köy, barikat, askeri üs, pist), kutu modeller, gece-gündüz
+src/world/     Harita, bölgeler (köy, barikat, askeri üs, pist, nükleer tesis, roket üssü), uzay istasyonu, gece-gündüz
 src/player/    Birinci şahıs oyuncu, envanter
 src/weapons/   Silah tablosu (weaponData), ateş/levye/fırlatma, elde tutulan silah görünümü
 src/entities/  Zombiler (tür tablosu + yapay zeka), doğurucu, yerdeki eşyalar, patlayıcılar
@@ -121,8 +134,8 @@ src/vehicles/  Araç tablosu, saf araç fiziği (test edilir), araç modelleri, 
 src/fx/        Parçacıklar, mermi izleri, yer lekeleri
 src/audio/     Kodla üretilen ses efektleri ve müzik
 src/ui/        HUD, menüler, telsiz
-src/levels/    2. bölüm görevi (kurtarma)
-tests/         Hasar, envanter, kol eşlemesi, çarpışma ızgarası, araç fiziği testleri
+src/levels/    Bölüm görevleri (kurtarma, reaktör, roket, istasyon) ve saf kuralları, hazır eşyalar
+tests/         Hasar, envanter, kol eşlemesi, çarpışma ızgarası, araç fiziği, bölüm kuralları testleri
 ```
 
 Yeni bir zombi türü için `src/entities/zombieTypes.js`, yeni bir silah için `src/weapons/weaponData.js`, yeni bir araç için `src/vehicles/vehicleTypes.js` tablosuna bir satır eklemek yeterli.

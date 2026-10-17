@@ -3,6 +3,7 @@ import { boxFromBase } from '../core/Collision.js';
 import { mulberry32 } from '../core/math.js';
 import { box, mat, glowMat, part, BOX_GEO } from './materials.js';
 import { buildFacility } from './facility.js';
+import { buildLaunchSite } from './launchSite.js';
 import { buildVillage, buildBarricade, buildMilitaryBase, buildRunway, buildHideoutBarricades, buildSafeCamp, road, CLEAR_ZONES, BASE, RUNWAY } from './regions.js';
 
 export const MAP_HALF = 225; // Oynanabilir alan ±225 m
@@ -83,6 +84,7 @@ export class World {
     buildMilitaryBase(this);
     buildRunway(this);
     buildFacility(this);
+    buildLaunchSite(this);
     this.buildBarrels();
     this.buildCrates();
     this.buildTrees();
@@ -345,7 +347,7 @@ export class World {
       [-20, 77], [10, 60], [-12, -60], [15, -95], [-80, 0], [80, 40], [60, -70], [-30, 100],
       [40, 90], [-90, -40], [90, -90], [-95, 80], [25, 10], [-15, 20],
       [-120, 40], [-152, 30], [-185, 12], [-168, -10], [-130, 0], [8, 172], [-16, 150],
-      [120, 60], [170, 92], [-200, 150], [-150, -160], [60, 180], [200, 30], [-60, -190],
+      [120, 60], [170, 92], [-200, 150], [-95, -130], [60, 180], [200, 30], [-60, -190],
       [100, -40], [-110, -100], [140, -40], [30, 200],
     ];
     for (const [x, z] of spots) this.addCrate(x, z);

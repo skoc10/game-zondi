@@ -13,6 +13,7 @@ export class Explosives {
     this.scene = scene;
     this.game = game;
     this.projectiles = [];
+    this.gravity = GRAVITY; // uzayda düşük
     this.placed = [];
     this.pending = [];
     this.lights = [];
@@ -44,7 +45,7 @@ export class Explosives {
     const dz = target.z - origin.z;
     const dist = Math.hypot(dx, dz);
     const t = Math.max(0.6, dist / 14);
-    const vel = new THREE.Vector3(dx / t, (target.y + 0.5 - origin.y) / t + 0.5 * GRAVITY * t, dz / t);
+    const vel = new THREE.Vector3(dx / t, (target.y + 0.5 - origin.y) / t + 0.5 * this.gravity * t, dz / t);
     this.projectiles.push({
       kind: 'flask', mesh, pos: origin.clone(), vel, impact: true, radius: 0, damage: 0,
       gravity: true, life: 6, owner: 'enemy', fuse: 0, spin: new THREE.Vector3(6, 4, 0),
@@ -308,7 +309,7 @@ export class Explosives {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.life -= dt;
-      if (p.gravity) p.vel.y -= GRAVITY * dt;
+      if (p.gravity) p.vel.y -= this.gravity * dt;
       const step = p.vel.length() * dt;
       const dir = p.vel.clone().normalize();
       let boom = null;

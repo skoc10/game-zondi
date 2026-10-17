@@ -125,8 +125,9 @@ export class Spawner {
     if (this.timer > 0 || !player.alive || this.disabled) return;
     const difficulty = Math.min(1, this.elapsed / 600);
     // Sınır oyuncunun 150 m çevresini sayar; zombiler bu alana yayılır
-    const maxActive = Math.min(34, Math.round((14 + difficulty * 8) * (1 + night * 0.5)));
-    const interval = (night > 0.5 ? 1.0 : 1.8) * (1 - difficulty * 0.3);
+    const boost = this.boost || 1;
+    const maxActive = Math.min(34 * boost, Math.round((14 + difficulty * 8) * (1 + night * 0.5) * boost));
+    const interval = ((night > 0.5 ? 1.0 : 1.8) * (1 - difficulty * 0.3)) / boost;
     this.timer = interval * rand(0.7, 1.3);
     if (this.zombies.countNear(player.pos.x, player.pos.z, 150) >= maxActive) return;
     // İlk silahlı zombiyi garanti et

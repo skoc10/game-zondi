@@ -1,5 +1,6 @@
 // Bölüm doğrudan (kayıtsız) başlatılınca verilen hazır eşyalar
-export function applyLoadout(level, inventory, player) {
+// sub 'space': fırlatmadan sonra istasyonda başlanırsa lazer de verilir
+export function applyLoadout(level, inventory, player, sub = null) {
   if (level === 2) {
     inventory.addWeapon('pistol', 36);
     inventory.select(1);
@@ -20,5 +21,9 @@ export function applyLoadout(level, inventory, player) {
     inventory.addItem('tnt', 2);
     inventory.select(3);
     player.armor = 100;
+    if (sub === 'space') {
+      inventory.addWeapon('laser', 72);
+      inventory.select(8);
+    }
   }
 }
