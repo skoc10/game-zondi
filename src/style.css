@@ -138,3 +138,7 @@ h2 { font-size: 34px; color: #9cff57; letter-spacing: 3px; margin-bottom: 8px; }
 #fade.white { background: #fff; transition: opacity 0.25s; }
 
 .menu-item.locked { opacity: 0.4; cursor: not-allowed; }
+#child-rows .bar.warn { animation: warnBlink 0.8s steps(2, start) infinite; }
+#child-rows .bar.warn b { color: #ff5252; }
+@keyframes warnBlink { to { opacity: 0.35; } }
+.sub.small { font-size: 12px; margin: -4px 0 8px; opacity: 0.7; }

@@ -242,6 +242,8 @@ export class HUD {
         fill.dataset.color = c.color;
         fill.style.background = c.color;
       }
+      // Kritik değer yanıp söner (açlık/susuzluk)
+      row.classList.toggle('warn', !!c.warn);
     });
   }
 

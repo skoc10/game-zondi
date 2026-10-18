@@ -132,6 +132,16 @@ export function medkitModel() {
   return g;
 }
 
+// Çiğ et parçası (kemikli)
+export function meatModel() {
+  const g = new THREE.Group();
+  part(g, 0.34, 0.16, 0.24, 0, 0, 0, '#c62828');
+  part(g, 0.26, 0.04, 0.2, 0, 0.09, 0, '#ef9a9a');
+  part(g, 0.3, 0.06, 0.06, 0.24, 0.02, 0, '#f5f5f5');
+  part(g, 0.08, 0.1, 0.1, 0.4, 0.02, 0, '#f5f5f5');
+  return g;
+}
+
 export function laserModel() {
   const g = new THREE.Group();
   part(g, 0.1, 0.12, 0.42, 0, 0.04, -0.05, '#eceff1');

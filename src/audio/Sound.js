@@ -273,6 +273,27 @@ export class Sound {
         this.tone(d, { type: 'sawtooth', freq: 1800, freqEnd: 300, dur: 0.14, vol: 0.35 });
         this.tone(d, { type: 'square', freq: 900, freqEnd: 200, dur: 0.1, vol: 0.15 });
         break;
+      case 'deer':
+        // Ürken geyiğin kısa böğürmesi
+        this.tone(d, { type: 'sawtooth', freq: 700 * pitch, freqEnd: 380 * pitch, dur: 0.35, vol: 0.25, attack: 0.02 });
+        this.noiseBurst(d, { dur: 0.2, type: 'bandpass', freq: 1200, q: 1.5, vol: 0.15 });
+        break;
+      case 'hooves':
+        for (let i = 0; i < 4; i++) this.noiseBurst(d, { dur: 0.05, type: 'bandpass', freq: 300 + i * 40, q: 2, vol: 0.35, delay: i * 0.09 });
+        break;
+      case 'drink':
+        for (let i = 0; i < 3; i++) this.tone(d, { type: 'sine', freq: 380 * pitch + i * 40, freqEnd: 220 * pitch, dur: 0.12, vol: 0.3, delay: i * 0.22 });
+        break;
+      case 'eat':
+        for (let i = 0; i < 4; i++) this.noiseBurst(d, { dur: 0.08, type: 'bandpass', freq: 900, q: 1.2, vol: 0.35, delay: i * 0.16 });
+        break;
+      case 'sizzle':
+        this.noiseBurst(d, { dur: 0.9, type: 'highpass', freq: 3500, vol: 0.3, attack: 0.05 });
+        break;
+      case 'growl':
+        this.tone(d, { type: 'sawtooth', freq: 90, freqEnd: 60, dur: 0.6, vol: 0.25, attack: 0.1 });
+        this.tone(d, { type: 'sine', freq: 140, freqEnd: 80, dur: 0.5, vol: 0.2, delay: 0.3 });
+        break;
       case 'siren':
         this.tone(d, { type: 'sawtooth', freq: 500, freqEnd: 950, dur: 0.6, vol: 0.25, attack: 0.05 });
         this.tone(d, { type: 'sawtooth', freq: 950, freqEnd: 500, dur: 0.6, vol: 0.25, delay: 0.6 });

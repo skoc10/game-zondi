@@ -556,6 +556,10 @@ export class VehicleManager {
     const spec = v.spec;
     const speed = Math.abs(st.speed);
     const fwd = v.forward(tmp2).clone().multiplyScalar(Math.sign(st.speed) || 1);
+    // Geyik ezilirse ölür
+    for (const d of g.animals ? g.animals.list : []) {
+      if (d.alive && speed > 3 && v.surfaceDist(d.pos.x, d.pos.z) < 0.7 && Math.abs(st.y) < 2) g.animals.damage(d, 9999, 'body', 'vehicle', fwd);
+    }
     for (const z of g.zombies.list) {
       if (!z.alive) continue;
       z.ramCd = (z.ramCd || 0) - dt;

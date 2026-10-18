@@ -213,6 +213,7 @@ export class WeaponSystem {
     g.audio.play(w.sound);
     g.input.rumble(id === 'shotgun' || id === 'rocket' ? 0.8 : 0.3, 0.5, id === 'smg' ? 60 : 120);
     g.zombies.alert(player.pos, 35);
+    if (g.animals) g.animals.onGunshot(player.pos);
     const eye = player.eye;
     const fwd = player.forward();
     const muzzle = this.muzzleWorld();
@@ -252,6 +253,18 @@ export class WeaponSystem {
     const worldT = wh ? wh.t : maxT;
     const zh = g.zombies.raycast(origin, dir, worldT);
     const out = { hitZombie: false, killed: false, point: origin.clone().addScaledVector(dir, worldT) };
+    // Geyik (zombiden daha yakınsa)
+    const ah = g.animals ? g.animals.raycast(origin, dir, zh ? zh.t : worldT) : null;
+    if (ah) {
+      out.point = origin.clone().addScaledVector(dir, ah.t);
+      let dmg = w.damage;
+      if (w.falloff && ah.t > w.falloff) dmg *= clamp(1 - (ah.t - w.falloff) / 30, 0.25, 1);
+      const r = g.animals.damage(ah.deer, dmg, ah.part, 'bullet', dir);
+      g.audio.play('hit', ah.deer.pos, 0.6);
+      out.hitZombie = true;
+      out.killed = r.killed;
+      return out;
+    }
     if (zh) {
       out.point = origin.clone().addScaledVector(dir, zh.t);
       let dmg = w.damage;
@@ -312,6 +325,13 @@ export class WeaponSystem {
     const fwd = g.player.forward();
     // Önce doğrudan ışın, olmazsa önündeki koniden en yakın zombi
     let zh = g.zombies.raycast(eye, fwd, w.range);
+    const ah = g.animals ? g.animals.raycast(eye, fwd, zh ? zh.t : w.range) : null;
+    if (ah) {
+      const r = g.animals.damage(ah.deer, w.damage, ah.part, 'melee', fwd);
+      g.audio.play('hit', null, 1);
+      g.hud.hitMarker(r.killed);
+      return;
+    }
     if (!zh) {
       let best = null;
       let bd = w.range + 0.5;

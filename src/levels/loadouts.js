@@ -12,6 +12,10 @@ export function applyLoadout(level, inventory, player, sub = null) {
     inventory.addItem('c4', 2);
     inventory.select(3);
     player.armor = 50;
+  } else if (level === 5) {
+    // Hayatta kalma: az mermi, avlanmak için
+    inventory.addWeapon('pistol', 18);
+    inventory.select(1);
   } else if (level === 4) {
     inventory.addWeapon('pistol', 36);
     inventory.addWeapon('shotgun', 24);

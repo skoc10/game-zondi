@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as M from '../world/models.js';
 import { WEAPONS, THROWABLES } from '../weapons/weaponData.js';
 
-// type: weapon | ammo | grenade | tnt | c4 | head | armor | medkit | gas
+// type: weapon | ammo | grenade | tnt | c4 | head | armor | medkit | gas | meat
 const BUILDERS = {
   ammo: () => M.ammoBoxModel(),
   grenade: M.grenadeModel,
@@ -12,9 +12,10 @@ const BUILDERS = {
   armor: M.armorModel,
   medkit: M.medkitModel,
   gas: M.gasCanModel,
+  meat: M.meatModel,
 };
 
-const RING = { gas: '#ff7043', weapon: '#fff59d', head: '#b2ff59', armor: '#64b5f6', medkit: '#ef9a9a' };
+const RING = { meat: '#ff8a80', gas: '#ff7043', weapon: '#fff59d', head: '#b2ff59', armor: '#64b5f6', medkit: '#ef9a9a' };
 
 export function pickupLabel(p) {
   switch (p.type) {
@@ -27,6 +28,7 @@ export function pickupLabel(p) {
     case 'armor': return 'Zırh giy';
     case 'medkit': return 'İlk yardım kullan';
     case 'gas': return 'Benzin bidonunu al';
+    case 'meat': return 'Çiğ eti al';
     default: return 'Al';
   }
 }
@@ -49,7 +51,7 @@ export class PickupManager {
     this.scene.add(g);
     const p = {
       type, ...data, mesh: g, model, pos: new THREE.Vector3(x, 0, z),
-      life: type === 'gas' ? Infinity : type === 'head' ? 45 : 75,
+      life: type === 'gas' ? Infinity : type === 'head' ? 45 : type === 'meat' ? 120 : 75,
       phase: Math.random() * 6,
     };
     this.list.push(p);

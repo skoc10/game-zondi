@@ -12,7 +12,7 @@ export function loadSave(storage = globalThis.localStorage) {
     const raw = storage && storage.getItem(KEY);
     if (!raw) return null;
     const d = JSON.parse(raw);
-    if (!d || d.v !== SAVE_VERSION || !Number.isInteger(d.level) || d.level < 1 || d.level > 4) return null;
+    if (!d || d.v !== SAVE_VERSION || !Number.isInteger(d.level) || d.level < 1 || d.level > 5) return null;
     if (!d.player || !Number.isFinite(d.player.x) || !Number.isFinite(d.player.z)) return null;
     return d;
   } catch {

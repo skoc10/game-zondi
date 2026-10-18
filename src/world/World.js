@@ -4,6 +4,7 @@ import { mulberry32 } from '../core/math.js';
 import { box, mat, glowMat, part, BOX_GEO } from './materials.js';
 import { buildFacility } from './facility.js';
 import { buildLaunchSite } from './launchSite.js';
+import { buildSurvival } from './survival.js';
 import { buildVillage, buildBarricade, buildMilitaryBase, buildRunway, buildHideoutBarricades, buildSafeCamp, road, CLEAR_ZONES, BASE, RUNWAY } from './regions.js';
 
 export const MAP_HALF = 225; // Oynanabilir alan ±225 m
@@ -41,6 +42,9 @@ export class World {
     this.level = level;
     this.barricades = [];
     this.turrets = [];
+    this.extraClear = [];
+    this.waterSources = [];
+    this.campfires = [];
     this.scene = scene;
     this.collision = collision;
     this.rng = mulberry32(1337);
@@ -78,14 +82,16 @@ export class World {
     buildVillage(this);
     buildBarricade(this);
     if (this.level === 2) buildHideoutBarricades(this);
-    // Güvenli kamp 2. bölümden itibaren kurulu
-    if (this.level >= 2) buildSafeCamp(this);
+    // Güvenli kamp 2–4. bölümlerde kurulu (hayatta kalma modunda yok)
+    if (this.level >= 2 && this.level <= 4) buildSafeCamp(this);
     buildMilitaryBase(this);
     buildRunway(this);
     buildFacility(this);
     buildLaunchSite(this);
     this.buildBarrels();
     this.buildCrates();
+    // Hayatta kalma modu: göl, kuyu, pompa, su tankı, kamp ateşleri
+    if (this.level === 5) buildSurvival(this);
     this.buildTrees();
     this.buildRocks();
   }
@@ -358,6 +364,7 @@ export class World {
     if (x > 2 && x < 45 && z > -60 && z < -30) return false; // benzinlik
     if (x > -78 && x < -32 && z > 23 && z < 63) return false; // çiftlik
     for (const [a, b, c, d] of CLEAR_ZONES) if (x > a && x < c && z > b && z < d) return false;
+    for (const [a, b, c, d] of this.extraClear) if (x > a && x < c && z > b && z < d) return false;
     return !this.collision.blockedAt(x, z, r + 1.5, 3);
   }
 

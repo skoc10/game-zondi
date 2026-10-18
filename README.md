@@ -23,6 +23,16 @@ Gece, deposu boş bir arabanın yanında doğuyorsun. Elinde sadece **fener** ve
    - Her bölme temizlenince enerji kapısı açılır. Çekirdek odasındaki **Uzaylı Kraliçe** üç aşamalı: pembe kristaller kalkanını besler.
    - Kraliçe ölünce **DÜNYA KURTARILDI!**
 
+### Hayatta Kal (bağımsız, sonsuz mod)
+
+Ana menüdeki **HAYATTA KAL** her zaman açıktır, bölüm sırasından bağımsızdır. Amaç olabildiğince uzun hayatta kalmak; en uzun süre rekor olarak saklanır.
+
+- **Açlık ve susuzluk** sürekli düşer (koşarken daha hızlı). Biri sıfırlanınca can gider; 25'in altında dayanıklılık yavaş dolar.
+- **Avlan:** Meralarda geyik sürüleri otlar. Yaklaşınca, koşunca ya da silah sesi duyunca kaçarlar; sessizce yaklaş. Gövdeden 2, kafadan 1 vuruş. Vurulan geyikten 2 çiğ et düşer.
+- **Pişir ve ye:** Çiğ eti kamp ateşinde **E basılı tutarak** pişir, **H** (kolda D-pad ◄) ile ye. Pişmiş et iyi doyurur; çiğ et az doyurur ve midene dokunur.
+- **Su:** Kuzeybatıdaki göl, köy kuyusu, çiftlik pompası ve askeri üsteki su tankında **E basılı tutarak** iç. Matarayı doldur (3 yudum), **J** (kolda D-pad ►) ile yolda iç.
+- **Tehlike:** Zombiler her gün artar. Gece kamp ateşlerinin ışığı zombileri çeker. Mermi azdır.
+
 **Kayıt:** Bölüm içinde istediğin yerde **K** (kolda Back / Share) ya da duraklat menüsündeki **KAYDET** ile kaydedebilirsin. Ölürsen **KAYITTAN DEVAM** ile kaydettiğin yerden doğarsın: konumun, eşyaların, zombiler, araçlar, kırdığın kapılar ve kurtardığın çocuklar kayıttaki gibi gelir (can en az 50). Her bölümün başında otomatik kayıt alınır. Bomba geri sayımında, konsol savunmasında ve havadayken kaydedilemez.
 
 İlerleme tarayıcıda kaydedilir. Bölüm sonundaki **"N. BÖLÜME DEVAM"** ya da ana menüdeki **"DEVAM ET"** ile eşyalarınla sonraki bölüme geçersin.
@@ -55,6 +65,8 @@ npm test         # birim testleri (vitest)
 | C4 patlat | G (C4 eldeyken sağ tık) | D-pad ▲ |
 | Duraklat | Esc, P | Start / Options |
 | Kaydet | K | Back / View · Share / Create |
+| Ye (Hayatta Kal) | H | D-pad ◄ |
+| Mataradan iç (Hayatta Kal) | J | D-pad ► |
 
 ### Araçlar
 
@@ -137,7 +149,7 @@ src/vehicles/  Araç tablosu, saf araç fiziği (test edilir), araç modelleri, 
 src/fx/        Parçacıklar, mermi izleri, yer lekeleri
 src/audio/     Kodla üretilen ses efektleri ve müzik
 src/ui/        HUD, menüler, telsiz
-src/levels/    Bölüm görevleri (kurtarma, reaktör, roket, istasyon) ve saf kuralları, hazır eşyalar
+src/levels/    Bölüm görevleri (kurtarma, reaktör, roket, istasyon, hayatta kal) ve saf kuralları, hazır eşyalar
 tests/         Hasar, envanter, kol eşlemesi, çarpışma ızgarası, araç fiziği, bölüm kuralları testleri
 ```
 

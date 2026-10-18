@@ -25,6 +25,9 @@ import { RescueMission } from '../levels/RescueMission.js';
 import { ReactorMission } from '../levels/ReactorMission.js';
 import { LaunchMission } from '../levels/LaunchMission.js';
 import { StationMission } from '../levels/StationMission.js';
+import { SurvivalMission } from '../levels/SurvivalMission.js';
+import { SURVIVAL_LEVEL, loadRecord, formatSurvival } from '../levels/survivalLogic.js';
+import { AnimalManager } from '../entities/Animals.js';
 import { loadProgress, saveProgress, LAST_LEVEL, unlockLevel, isUnlocked } from './Progress.js';
 import { applyLoadout } from '../levels/loadouts.js';
 import { loadSave, writeSave, clearSave, saveMatches, saveBlockReason, captureSave, applySave } from './SaveGame.js';
@@ -106,6 +109,8 @@ export class Game {
     this.player = new Player(this.camera, this.collision, this.audio);
     this.pickups = new PickupManager(this.scene);
     this.zombies = new ZombieManager(this.scene, this.collision, this);
+    // Hayatta kalma modunda geyikler
+    this.animals = level === SURVIVAL_LEVEL ? new AnimalManager(this) : null;
     this.spawner = new Spawner(this.zombies, this.collision);
     this.explosives = new Explosives(this.scene, this);
     this.weapons = new WeaponSystem(this);
@@ -133,6 +138,7 @@ export class Game {
     if (level === 2) this.mission = new RescueMission(this);
     else if (level === 3) this.mission = new ReactorMission(this);
     else if (level === 4) this.mission = space ? new StationMission(this) : new LaunchMission(this);
+    else if (level === SURVIVAL_LEVEL) this.mission = new SurvivalMission(this);
     if (this.weapons) this.resize();
   }
 
@@ -148,7 +154,14 @@ export class Game {
     const prog = save || loadProgress();
     const cont = document.getElementById('btn-continue');
     cont.style.display = prog ? '' : 'none';
-    if (prog) cont.textContent = `DEVAM ET: ${prog.level}. BÖLÜM${prog.sub === 'space' ? ' (UZAY)' : ''}${save ? ' · KAYIT' : ''}`;
+    if (prog) {
+      const name = prog.level === SURVIVAL_LEVEL ? 'HAYATTA KAL' : `${prog.level}. BÖLÜM${prog.sub === 'space' ? ' (UZAY)' : ''}`;
+      cont.textContent = `DEVAM ET: ${name}${save ? ' · KAYIT' : ''}`;
+    }
+    const rec = loadRecord();
+    document.getElementById('survival-record').textContent = rec
+      ? `Rekor: ${formatSurvival(rec.seconds)} hayatta kalma`
+      : 'Aç, susuz ve zombilerin arasında ne kadar dayanabilirsin?';
     this.menu.open('menu-main');
   }
 
@@ -266,6 +279,9 @@ export class Game {
     switch (action) {
       case 'play':
         this.newGame(1);
+        break;
+      case 'survival':
+        this.newGame(SURVIVAL_LEVEL);
         break;
       case 'restart': {
         // Kayıt bu bölüme aitse eşyalarla, değilse hazır eşyalarla baştan
@@ -412,6 +428,13 @@ export class Game {
     }
   }
 
+  // Vurulan geyikten çiğ et düşer
+  onDeerKilled(d) {
+    if (this.mission && this.mission.counts) this.mission.counts.deer++;
+    for (let i = 0; i < 2; i++) this.pickups.spawn('meat', d.pos.x + rand(-0.8, 0.8), d.pos.z + rand(-0.8, 0.8));
+    this.hud.toast('Geyik vuruldu! Eti al.');
+  }
+
   breakCrate(c) {
     if (!c.alive) return;
     this.world.removeCrate(c);
@@ -474,6 +497,12 @@ export class Game {
         p.health = Math.min(100, p.health + 45);
         this.hud.toast('+45 can');
         break;
+      case 'meat': {
+        const n = this.mission && this.mission.addMeat ? this.mission.addMeat(1) : 0;
+        if (n <= 0) return this.hud.toast('Daha fazla et taşıyamazsın');
+        this.hud.toast('Çiğ et alındı — kamp ateşinde pişir');
+        break;
+      }
       case 'gas':
         p.carryingGas = true;
         this.hud.toast('Benzin bidonu alındı! Arabaya götür (yavaşlarsın).');
@@ -547,6 +576,7 @@ export class Game {
     const inv = this.inventory;
     switch (pk.type) {
       case 'gas': return p.carryingGas ? 'Önce elindeki bidonu arabaya götür' : null;
+      case 'meat': return this.mission && this.mission.meatFull ? 'Daha fazla et taşıyamazsın' : null;
       case 'armor': return p.armor >= 100 ? 'Zırhın zaten dolu' : null;
       case 'medkit': return p.health >= 100 ? 'Canın zaten dolu' : null;
       case 'grenade':
@@ -615,7 +645,7 @@ export class Game {
     const next = document.getElementById('btn-next');
     next.style.display = hasNext ? '' : 'none';
     next.textContent = `${this.level + 1}. BÖLÜME DEVAM`;
-    const rows = [
+    const rows = this.mission && this.mission.endStats ? this.mission.endStats() : [
       ['Süre', formatTime(this.stats.time)],
       ['Öldürülen zombi', this.stats.kills],
       ['Kafadan vuruş', this.stats.headshots],
@@ -644,6 +674,7 @@ export class Game {
       this.hud.banner('ŞAFAK SÖKTÜ', 3);
     }
     if (s.save) this.saveGame();
+    if (this.mission && this.mission.onInput) this.mission.onInput(s);
     if (s.flashlight && this.player.alive) {
       this.player.flashOn = !this.player.flashOn;
       this.audio.play('empty');
@@ -658,6 +689,7 @@ export class Game {
     this.audio.setListener(this.player.pos.x, this.player.pos.z, this.player.yaw);
     if (this.player.alive && !driving && !wasDriving) this.weapons.update(dt, s);
     this.zombies.update(dt, this.player, night);
+    if (this.animals) this.animals.update(dt, this.player, night);
     this.spawner.update(dt, this.player, night);
     this.explosives.update(dt);
     this.pickups.update(dt);

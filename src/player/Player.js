@@ -41,6 +41,7 @@ export class Player {
     this.health = 100;
     this.armor = 0;
     this.stamina = 1;
+    this.staminaMult = 1; // açlık/susuzlukta yavaş dolar
     this.alive = true;
     this.onGround = true;
     this.carryingGas = false;
@@ -91,7 +92,7 @@ export class Player {
     const wantSprint = s.sprint && moving && s.moveY > 0.2 && !this.carryingGas;
     const canSprint = wantSprint && this.stamina > 0.05;
     if (canSprint) this.stamina = Math.max(0, this.stamina - dt * 0.22);
-    else this.stamina = Math.min(1, this.stamina + dt * (moving ? 0.12 : 0.25));
+    else this.stamina = Math.min(1, this.stamina + dt * (moving ? 0.12 : 0.25) * this.staminaMult);
     let speed = canSprint ? SPRINT : WALK;
     if (this.carryingGas) speed *= 0.72;
 
