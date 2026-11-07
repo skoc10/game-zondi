@@ -1,5 +1,6 @@
 import { BTN, getActivePad, readPad, lookCurve, rumble, isPlayStation } from './Gamepad.js';
 import { settings } from './Settings.js';
+import { TouchControls, isTouchDevice } from './Touch.js';
 
 const MOUSE_RAD_PER_PX = 0.0022;
 const PAD_LOOK_SPEED = 3.2; // rad/s, tam çubukta
@@ -23,6 +24,8 @@ export class Input {
     this.ps = false;
     this.onLockChange = null;
     this.state = this.emptyState();
+    // Tablet/telefon: dokunmatik kontroller
+    this.touch = isTouchDevice() ? new TouchControls(this) : null;
 
     window.addEventListener('keydown', (e) => {
       if (['Space', 'Tab', 'ArrowUp', 'ArrowDown', 'AltLeft'].includes(e.code)) e.preventDefault();
@@ -199,6 +202,8 @@ export class Input {
       if (Math.hypot(p.lx, p.ly) < 0.3) this.padSprint = false;
     }
 
+    if (this.touch && this.lastDevice === 'touch') this.touch.apply(s);
+
     // Çapraz harekette hız artmasın
     const m = Math.hypot(s.moveX, s.moveY);
     if (m > 1) {
@@ -210,6 +215,7 @@ export class Input {
   }
 
   endFrame() {
+    if (this.touch) this.touch.endFrame();
     this.keysPressed.clear();
     this.mousePressed.clear();
     this.mouseDX = 0;

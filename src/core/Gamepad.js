@@ -71,12 +71,13 @@ export function rumble(gp, strong, weak, ms) {
 
 // HUD'daki tuş ipuçları
 const GLYPHS = {
-  xbox: { interact: 'X', fire: 'RT', reload: 'B', jump: 'A', flashlight: 'Y', detonate: '▲ D-pad', pause: 'Start', save: 'Back', eat: '◄', drink: '►' },
-  ps: { interact: '□', fire: 'R2', reload: '○', jump: '✕', flashlight: '△', detonate: '▲ D-pad', pause: 'Options', save: 'Share', eat: '◄', drink: '►' },
+  xbox: { interact: 'X', fire: 'RT', reload: 'B', jump: 'A', flashlight: 'Y', detonate: '▲ D-pad', pause: 'Start', save: 'Back', eat: 'D-pad ◄', drink: 'D-pad ►' },
+  ps: { interact: '□', fire: 'R2', reload: '○', jump: '✕', flashlight: '△', detonate: '▲ D-pad', pause: 'Options', save: 'Share', eat: 'D-pad ◄', drink: 'D-pad ►' },
+  touch: { interact: 'E', fire: 'ATEŞ', reload: 'R', jump: 'ZIPLA', flashlight: 'FENER', detonate: 'C4', pause: 'II', save: 'Menü', eat: 'YE', drink: 'İÇ' },
   kbm: { interact: 'E', fire: 'Sol Tık', reload: 'R', jump: 'Space', flashlight: 'F', detonate: 'G', pause: 'Esc', save: 'K', eat: 'H', drink: 'J' },
 };
 
 export function glyph(action, device, ps = false) {
-  const set = device === 'pad' ? (ps ? GLYPHS.ps : GLYPHS.xbox) : GLYPHS.kbm;
+  const set = device === 'pad' ? (ps ? GLYPHS.ps : GLYPHS.xbox) : device === 'touch' ? GLYPHS.touch : GLYPHS.kbm;
   return set[action] || action;
 }

@@ -2,6 +2,8 @@
 
 Basit, hızlı ve eğlenceli bir birinci şahıs zombi hayatta kalma oyunu. Grafikler Three.js ile kutu tarzında.
 
+**Hemen oyna:** https://skoc10.github.io/game-zondi/ — bilgisayar (klavye/fare ya da oyun kolu), tablet ve telefonda (dokunmatik) çalışır.
+
 Gece, deposu boş bir arabanın yanında doğuyorsun. Elinde sadece **fener** ve **levye** var. Haritadaki 5 benzin bidonundan **3'ünü** bul, arabaya dök ve kaç! İstersen yolda bulduğun cipe, tanka, helikoptere ya da uçağa binip zombileri ez veya havadan bombala. Zombiler yeşil ve kafaları dikdörtgen. Silahlı zombileri öldürüp silahlarını alabilirsin. Variller, TNT ve C4 ile hepsini havaya uçurabilirsin.
 
 ## Bölümler
@@ -47,6 +49,24 @@ npm run dev      # http://localhost:5173
 npm run build    # dist/ klasörüne yayınlanabilir sürüm
 npm test         # birim testleri (vitest)
 ```
+
+### GitHub Pages
+
+`.github/workflows/pages.yml` her push'ta testleri çalıştırır, oyunu derler ve GitHub Pages'e yayınlar. İlk seferde depoda bir kez **Settings → Pages → Build and deployment → Source: GitHub Actions** seçilmelidir. Derleme göreli yollar kullandığı için (`base: './'`) depo adı değişse de çalışır.
+
+### Tablet ve telefon
+
+Dokunmatik ekranda kontroller kendiliğinden açılır. Oyun yatay oynanır; dokunarak başlatılınca tam ekrana geçer (iPhone Safari'de tam ekran yok, adres çubuğu kalır). Telefonda daha akıcı olsun diye gölgeler ve kenar yumuşatma kapalıdır.
+
+| Eylem | Dokunmatik |
+|---|---|
+| Hareket | Ekranın sol yarısında parmağını kaydır (sanal çubuk; sonuna kadar itersen koşarsın) |
+| Bakış | Sağ yarıda parmağını kaydır (ATEŞ'e basılıyken de döner) |
+| Ateş, nişan, zıpla, E, şarjör, silah, fener | Sağ alttaki butonlar (NİŞAN aç/kapa) |
+| Silah seç | Alttaki eşya çubuğuna dokun |
+| Araçta | Çubukla sür; helikopterde YÜKSEL/ALÇAL, uçakta GAZ/FREN, BOMBA |
+| Hayatta Kal | YE ve İÇ butonları |
+| Duraklat / kaydet | Üstteki II butonu → KAYDET |
 
 ## Kontroller
 

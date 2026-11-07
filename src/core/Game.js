@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Input } from './Input.js';
+import { isTouchDevice } from './Touch.js';
 import { CollisionWorld } from './Collision.js';
 import { World, GAS_SPOTS, CAR_POS, GAS_REQUIRED } from '../world/World.js';
 import { destroyPylon } from '../world/facility.js';
@@ -36,9 +37,11 @@ import { randInt, chance, pickWeighted, rand, formatTime } from './math.js';
 export class Game {
   constructor(canvas) {
     this.canvas = canvas;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    this.renderer.shadowMap.enabled = true;
+    // Tablet/telefonda daha hafif çizim: kenar yumuşatma ve gölgeler kapalı, düşük çözünürlük
+    this.mobile = isTouchDevice();
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !this.mobile, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.mobile ? 1 : 1.5));
+    this.renderer.shadowMap.enabled = !this.mobile;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.input = new Input(canvas);
     this.audio = new Sound();
@@ -60,8 +63,12 @@ export class Game {
       if (!locked && this.state === 'playing') this.pause();
     };
     canvas.addEventListener('click', () => {
-      if (this.state === 'playing') this.input.requestLock();
+      if (this.state === 'playing' && this.input.lastDevice === 'kbm') this.input.requestLock();
     });
+    // Dokunmatikte eşya çubuğuna dokunarak silah seçimi
+    this.hud.slotEls.forEach((el, i) => el.addEventListener('pointerdown', () => {
+      if (this.input.touch) this.input.touch.slot = i;
+    }));
     const wake = () => this.audio.resume();
     window.addEventListener('keydown', wake);
     window.addEventListener('mousedown', wake);
@@ -167,6 +174,7 @@ export class Game {
 
   // carry: önceki bölümden taşınan eşya/can; yoksa bölümün hazır eşyaları verilir
   newGame(level = 1, carry = null, sub = null) {
+    this.enterFullscreen();
     this.audio.stopEngine();
     this.buildScene(level, sub);
     this.state = 'playing';
@@ -188,12 +196,43 @@ export class Game {
     }
     // Bölüm başında otomatik kayıt: ölünce en azından buradan devam edilir
     writeSave(captureSave(this));
-    if (this.input.lastDevice !== 'pad') this.input.requestLock();
+    if (this.input.lastDevice === 'kbm') this.input.requestLock();
     this.audio.resume();
+  }
+
+  // Telefonda tam ekran ve yatay yön (dokunuşla başlatılan oyunda)
+  enterFullscreen() {
+    if (this.input.lastDevice !== 'touch') return;
+    const el = document.documentElement;
+    try {
+      if (!document.fullscreenElement && el.requestFullscreen) {
+        el.requestFullscreen({ navigationUI: 'hide' }).then(() => {
+          if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+        }).catch(() => {});
+      }
+    } catch {
+      // iPhone Safari tam ekranı desteklemez; oyun yine çalışır
+    }
+  }
+
+  // Dokunmatik butonların görünürlüğü oyunun durumuna göre
+  updateTouchUI(menuOpen) {
+    const t = this.input.touch;
+    if (!t) return;
+    const touching = this.input.lastDevice === 'touch';
+    document.body.classList.toggle('touch', touching);
+    const v = this.player.vehicle;
+    t.setContext({
+      visible: touching && this.state === 'playing' && !menuOpen && this.player.alive,
+      vehicle: v ? v.spec.kind : null,
+      survival: this.level === SURVIVAL_LEVEL,
+      c4: this.explosives.placed.some((p) => p.kind === 'c4') || this.inventory.activeId === 'c4',
+    });
   }
 
   // Kayıttan devam: sahne baştan kurulur, kayıttaki durum yüklenir
   loadGame(save) {
+    this.enterFullscreen();
     this.audio.stopEngine();
     this.buildScene(save.level, save.sub || null);
     this.state = 'playing';
@@ -202,7 +241,7 @@ export class Game {
     document.getElementById('fade').classList.remove('show');
     applySave(this, save);
     this.hud.banner('KAYITTAN DEVAM', 2.5);
-    if (this.input.lastDevice !== 'pad') this.input.requestLock();
+    if (this.input.lastDevice === 'kbm') this.input.requestLock();
     this.audio.resume();
   }
 
@@ -272,7 +311,7 @@ export class Game {
     this.state = 'playing';
     if (this.player.vehicle) this.audio.startEngine(this.player.vehicle.typeKey);
     this.menu.close();
-    if (this.input.lastDevice !== 'pad') this.input.requestLock();
+    if (this.input.lastDevice === 'kbm') this.input.requestLock();
   }
 
   menuAction(action) {
@@ -737,6 +776,7 @@ export class Game {
     // Menüdeki onay tuşu (ör. A) aynı karede oyunda zıplama sayılmasın
     const menuOpen = !!this.menu.current;
     if (menuOpen) this.menu.update(s);
+    this.updateTouchUI(menuOpen);
 
     switch (this.state) {
       case 'menu': {

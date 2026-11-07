@@ -4,6 +4,7 @@ import {
   tickNeeds, eat, sip, survivalTime, formatSurvival, loadRecord, updateRecord,
 } from './survivalLogic.js';
 import { rand } from '../core/math.js';
+import { glyph } from '../core/Gamepad.js';
 
 const START = { x: -100, z: 34 };
 const MAX_MEAT = 8;
@@ -125,7 +126,7 @@ export class SurvivalMission {
         if (s.interactPressed) {
           this.canteen = CANTEEN_MAX;
           g.audio.play('drink', null, 0.7, 1.3);
-          g.hud.toast(`Matara doldu (${CANTEEN_MAX} yudum) — ${g.input.lastDevice === 'pad' ? 'D-pad ►' : 'J'} ile iç`);
+          g.hud.toast(`Matara doldu (${CANTEEN_MAX} yudum) — ${glyph('drink', g.input.lastDevice, g.input.ps)} ile iç`);
         }
         return true;
       }
@@ -139,7 +140,7 @@ export class SurvivalMission {
           this.raw--;
           this.cooked++;
           g.audio.play('sizzle', fire.light.position);
-          g.hud.toast(`Et pişti (${this.cooked} pişmiş) — ${g.input.lastDevice === 'pad' ? 'D-pad ◄' : 'H'} ile ye`);
+          g.hud.toast(`Et pişti (${this.cooked} pişmiş) — ${glyph('eat', g.input.lastDevice, g.input.ps)} ile ye`);
         }
       } else {
         this.progress = Math.max(0, this.progress - dt);

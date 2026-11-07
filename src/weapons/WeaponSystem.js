@@ -112,7 +112,7 @@ export class WeaponSystem {
     }
 
     this.aim = damp(this.aim, s.aim ? 1 : 0, 12, dt);
-    if (s.aim || (s.fire && g.input.lastDevice === 'pad')) this.aimAssist(dt, s.aim ? 1 : 0.35);
+    if (s.aim || (s.fire && g.input.lastDevice !== 'kbm')) this.aimAssist(dt, s.aim ? 1 : 0.35);
 
     const ready = this.cooldown <= 0 && this.reloading <= 0 && this.switchAnim <= 0.3 && player.alive;
     if (ready) {
@@ -167,7 +167,8 @@ export class WeaponSystem {
 
   aimAssist(dt, strength) {
     const g = this.game;
-    if (g.input.lastDevice !== 'pad' || !settings.aimAssist) return;
+    // Kol ve dokunmatikte nişan yardımı (fare hariç)
+    if (g.input.lastDevice === 'kbm' || !settings.aimAssist) return;
     const eye = g.player.eye;
     const fwd = g.player.forward();
     let best = null;
@@ -429,7 +430,7 @@ export class WeaponSystem {
       pos = new THREE.Vector3(p.pos.x + (f.x / l) * 1.5, 0, p.pos.z + (f.z / l) * 1.5);
     }
     g.explosives.placeC4(pos, normal);
-    const key = g.input.lastDevice === 'pad' ? 'D-pad ▲' : 'G (ya da C4 eldeyken sağ tık)';
+    const key = g.input.lastDevice === 'pad' ? 'D-pad ▲' : g.input.lastDevice === 'touch' ? 'C4 butonu' : 'G (ya da C4 eldeyken sağ tık)';
     g.hud.toast(`C4 yerleştirildi — patlatmak için ${key}`);
     this.afterUse();
   }
